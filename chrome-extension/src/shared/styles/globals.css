@@ -4,32 +4,76 @@
 
 @layer base {
   body {
-    @apply antialiased;
+    @apply antialiased font-serif text-burn-black;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium;
+    @apply px-4 py-2 bg-burn-pink text-white rounded-lg hover:bg-burn-pink-dark active:bg-burn-pink-darker transition-colors font-semibold font-serif;
   }
 
   .btn-secondary {
-    @apply px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-medium;
+    @apply px-4 py-2 bg-burn-cream-dark text-burn-gray rounded-lg border border-burn-gold/40 hover:border-burn-gold hover:bg-burn-cream transition-colors font-medium font-serif;
   }
 
   .btn-danger {
-    @apply px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium;
+    @apply px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium font-serif;
   }
 
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+    @apply w-full px-3 py-2 bg-burn-cream border border-burn-gold/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-burn-pink/40 focus:border-burn-pink font-serif text-burn-black placeholder:text-burn-gray-light;
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-md p-4;
+    @apply bg-burn-cream rounded-lg shadow-notebook p-4 border border-burn-gold/10;
+  }
+
+  .card-notebook {
+    @apply bg-burn-cream rounded-lg shadow-notebook p-4 border border-burn-gold/10 bg-lined-paper;
   }
 
   .severity-indicator {
-    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold;
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold font-serif;
+  }
+
+  .diary-cover {
+    @apply bg-burn-pink-dark rounded-2xl p-8 text-white shadow-diary relative overflow-hidden;
+  }
+
+  .diary-cover::before {
+    content: '';
+    @apply absolute inset-0 opacity-10;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255,255,255,0.1) 10px,
+      rgba(255,255,255,0.1) 20px
+    );
+  }
+
+  .notebook-page {
+    @apply bg-burn-cream border-l-4 border-burn-pink-light bg-lined-paper p-4;
+  }
+
+  .nav-item {
+    @apply w-full text-left px-6 py-3 flex items-center gap-3 text-burn-gray hover:bg-burn-pink-50 hover:text-burn-pink-dark transition-colors font-serif;
+  }
+
+  .nav-item-active {
+    @apply w-full text-left px-6 py-3 flex items-center gap-3 bg-burn-pink-50 text-burn-pink-dark border-r-4 border-burn-pink font-semibold font-serif;
+  }
+
+  .heading-dramatic {
+    @apply font-handwritten text-4xl font-bold;
+  }
+
+  .heading-page {
+    @apply font-handwritten text-3xl font-bold;
+  }
+
+  .subtext-sassy {
+    @apply font-serif italic text-sm text-burn-gray;
   }
 }
