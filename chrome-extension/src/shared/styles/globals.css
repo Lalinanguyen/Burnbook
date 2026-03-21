@@ -43,7 +43,7 @@
 
   .diary-cover::before {
     content: '';
-    @apply absolute inset-0 opacity-10;
+    @apply absolute inset-0 opacity-10 pointer-events-none;
     background-image: repeating-linear-gradient(
       45deg,
       transparent,

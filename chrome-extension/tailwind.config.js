@@ -45,6 +45,25 @@ module.exports = {
       },
       backgroundImage: {
         'lined-paper': 'repeating-linear-gradient(to bottom, transparent, transparent 27px, rgba(212,165,116,0.2) 27px, rgba(212,165,116,0.2) 28px)'
+      },
+      perspective: {
+        '1000': '1000px',
+        '1500': '1500px',
+        '2000': '2000px',
+      },
+      animation: {
+        'page-flip-left': 'pageFlipLeft 0.6s ease-in-out',
+        'page-flip-right': 'pageFlipRight 0.6s ease-in-out',
+      },
+      keyframes: {
+        pageFlipLeft: {
+          '0%': { transform: 'rotateY(0deg)' },
+          '100%': { transform: 'rotateY(-180deg)' },
+        },
+        pageFlipRight: {
+          '0%': { transform: 'rotateY(0deg)' },
+          '100%': { transform: 'rotateY(180deg)' },
+        },
       }
     }
   },

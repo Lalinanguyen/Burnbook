@@ -6,12 +6,14 @@ import { localStorage as db } from '../../shared/storage/LocalDB';
 import { DEFAULT_OFFENSE_CATEGORIES, SEVERITY_LEVELS } from '../../shared/constants';
 
 interface OffenseFormProps {
+  bookId: string;
+  personName?: string;
   onClose: () => void;
   onSave: () => void;
 }
 
-export default function OffenseForm({ onClose, onSave }: OffenseFormProps) {
-  const [personName, setPersonName] = useState('');
+export default function OffenseForm({ bookId, personName: initialPersonName, onClose, onSave }: OffenseFormProps) {
+  const [personName, setPersonName] = useState(initialPersonName || '');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [occurrenceDate, setOccurrenceDate] = useState(
@@ -40,6 +42,7 @@ export default function OffenseForm({ onClose, onSave }: OffenseFormProps) {
 
     try {
       const data: CreateOffenseData = {
+        bookId,
         personName,
         title,
         description,

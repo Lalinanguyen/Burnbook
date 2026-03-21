@@ -8,6 +8,7 @@ export interface OffenseEvidence {
 export interface Offense {
   id: string;
   userId?: string;
+  bookId: string; // Link to which book this offense belongs to
   personName: string;
   personId?: string; // Optional link to relationship
   title: string;
@@ -27,6 +28,7 @@ export interface Offense {
 }
 
 export interface CreateOffenseData {
+  bookId: string;
   personName: string;
   personId?: string;
   title: string;

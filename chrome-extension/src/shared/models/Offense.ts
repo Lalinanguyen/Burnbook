@@ -10,6 +10,7 @@ import { SEVERITY_LEVELS } from '../constants';
 export class OffenseModel implements IOffense {
   id: string;
   userId?: string;
+  bookId: string;
   personName: string;
   personId?: string;
   title: string;
@@ -30,6 +31,7 @@ export class OffenseModel implements IOffense {
   constructor(data: Partial<IOffense>) {
     this.id = data.id || uuidv4();
     this.userId = data.userId;
+    this.bookId = data.bookId || '';
     this.personName = data.personName || '';
     this.personId = data.personId;
     this.title = data.title || '';
@@ -183,6 +185,7 @@ export class OffenseModel implements IOffense {
     return {
       id: this.id,
       userId: this.userId,
+      bookId: this.bookId,
       personName: this.personName,
       personId: this.personId,
       title: this.title,

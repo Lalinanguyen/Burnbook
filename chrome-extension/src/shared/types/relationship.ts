@@ -45,6 +45,7 @@ export interface SharingSettings {
 export interface Relationship {
   id: string;
   userId?: string;
+  bookId: string; // Link to which book this relationship belongs to
   personName: string;
   relationship: RelationshipType;
   createdAt: Date;
@@ -75,6 +76,7 @@ export interface Relationship {
 }
 
 export interface CreateRelationshipData {
+  bookId: string;
   personName: string;
   relationship: RelationshipType;
   contactFrequency: ContactFrequency;

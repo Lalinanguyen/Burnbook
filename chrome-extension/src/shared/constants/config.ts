@@ -1,7 +1,7 @@
 export const APP_CONFIG = {
   // Database
   DB_NAME: 'BurnBookDB',
-  DB_VERSION: 1,
+  DB_VERSION: 2,
 
   // Sync
   DEFAULT_SYNC_INTERVAL: 15, // minutes

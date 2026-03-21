@@ -13,6 +13,7 @@ import { dateHelpers } from '../utils';
 export class RelationshipModel implements IRelationship {
   id: string;
   userId?: string;
+  bookId: string;
   personName: string;
   relationship: IRelationship['relationship'];
   createdAt: Date;
@@ -33,6 +34,7 @@ export class RelationshipModel implements IRelationship {
   constructor(data: Partial<IRelationship>) {
     this.id = data.id || uuidv4();
     this.userId = data.userId;
+    this.bookId = data.bookId || '';
     this.personName = data.personName || '';
     this.relationship = data.relationship || 'other';
     this.createdAt = data.createdAt || new Date();
@@ -254,6 +256,7 @@ export class RelationshipModel implements IRelationship {
     return {
       id: this.id,
       userId: this.userId,
+      bookId: this.bookId,
       personName: this.personName,
       relationship: this.relationship,
       createdAt: this.createdAt,
