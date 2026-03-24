@@ -90,13 +90,13 @@ export default function BookView({ book, onClose }: BookViewProps) {
       </button>
 
       {/* Book */}
-      <div className="relative w-full max-w-6xl h-[85vh] flex items-center justify-center">
+      <div className="relative w-full max-w-6xl h-[85vh] flex items-center justify-center overflow-visible px-20">
         {/* Navigation arrows */}
         {currentPage > 0 && (
           <button
             onClick={prevPage}
             disabled={isFlipping}
-            className="absolute left-0 z-10 bg-white/10 hover:bg-white/20 text-white rounded-full p-4 transition-all disabled:opacity-50"
+            className="absolute -left-16 z-20 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all disabled:opacity-50"
           >
             <ChevronLeft size={32} />
           </button>
@@ -106,7 +106,7 @@ export default function BookView({ book, onClose }: BookViewProps) {
           <button
             onClick={nextPage}
             disabled={isFlipping}
-            className="absolute right-0 z-10 bg-white/10 hover:bg-white/20 text-white rounded-full p-4 transition-all disabled:opacity-50"
+            className="absolute -right-16 z-20 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all disabled:opacity-50"
           >
             <ChevronRight size={32} />
           </button>
