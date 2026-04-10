@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { localStorage as db } from '../shared/storage/LocalDB';
 import { passwordManager, secureStorage } from '../shared/utils/encryption';
 import { Book } from '../shared/types';
-import { Lock } from 'lucide-react';
-import Bookshelf from './components/Bookshelf';
+import { Lock, Home, Plus, LockKeyhole, Globe } from 'lucide-react';
+import Bookshelf3D from './components/Bookshelf3D';
 import BookView from './components/BookView';
 import NewBookForm from './components/NewBookForm';
+import MacOSDock from './components/MacOSDock';
+import RelationshipMap3D from './components/RelationshipMap3D';
 
-type AppView = 'bookshelf' | 'book' | 'new-book';
+type AppView = 'bookshelf' | 'book' | 'new-book' | '3d-map';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -89,6 +91,41 @@ function App() {
     setCurrentView('bookshelf');
   };
 
+  const handleLock = () => {
+    setIsLocked(true);
+    chrome.runtime.sendMessage({ type: 'LOCK' });
+  };
+
+  const dockItems = [
+    {
+      id: 'home',
+      icon: Home,
+      label: 'Bookshelf',
+      onClick: () => {
+        setSelectedBook(null);
+        setCurrentView('bookshelf');
+      }
+    },
+    {
+      id: 'add',
+      icon: Plus,
+      label: 'New Book',
+      onClick: handleCreateBook
+    },
+    {
+      id: '3d-map',
+      icon: Globe,
+      label: 'Relationship Galaxy',
+      onClick: () => setCurrentView('3d-map')
+    },
+    {
+      id: 'lock',
+      icon: LockKeyhole,
+      label: 'Lock',
+      onClick: handleLock
+    },
+  ];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-burn-cream">
@@ -153,7 +190,7 @@ function App() {
   return (
     <>
       {currentView === 'bookshelf' && (
-        <Bookshelf
+        <Bookshelf3D
           onSelectBook={handleSelectBook}
           onCreateBook={handleCreateBook}
         />
@@ -171,6 +208,20 @@ function App() {
           onClose={handleCloseNewBook}
           onSave={handleBookCreated}
         />
+      )}
+
+      {currentView === '3d-map' && (
+        <RelationshipMap3D
+          onSelectRelationship={(book) => {
+            setSelectedBook(book);
+            setCurrentView('book');
+          }}
+          onClose={() => setCurrentView('bookshelf')}
+        />
+      )}
+
+      {currentView === 'bookshelf' && (
+        <MacOSDock items={dockItems} />
       )}
     </>
   );
