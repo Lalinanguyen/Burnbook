@@ -9,7 +9,7 @@ interface NewBookFormProps {
   onSave: (book: Book) => void;
 }
 
-const COVER_COLORS = [
+export const COVER_COLORS = [
   { name: 'Mean Girls Pink', value: '#FF69B4' },
   { name: 'Hot Pink', value: '#FF1493' },
   { name: 'Lavender', value: '#E6E6FA' },

@@ -12,9 +12,10 @@ interface DockItem {
 interface MacOSDockProps {
   items: DockItem[];
   visible?: boolean;
+  activeId?: string;
 }
 
-export default function MacOSDock({ items, visible = true }: MacOSDockProps) {
+export default function MacOSDock({ items, visible = true, activeId }: MacOSDockProps) {
   const [mouseX, setMouseX] = useState<number | null>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const dockRef = useRef<HTMLDivElement>(null);
@@ -107,6 +108,10 @@ export default function MacOSDock({ items, visible = true }: MacOSDockProps) {
                   strokeWidth={2}
                 />
               </button>
+
+              {activeId === item.id && (
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-burn-pink-dark" />
+              )}
 
               {hoveredItem === item.id && (
                 <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 glass-dark text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap pointer-events-none animate-fade-in">

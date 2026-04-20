@@ -200,6 +200,7 @@ function App() {
         <BookView
           book={selectedBook}
           onClose={handleCloseBook}
+          onBookUpdated={(updated) => setSelectedBook(updated)}
         />
       )}
 
@@ -220,9 +221,10 @@ function App() {
         />
       )}
 
-      {currentView === 'bookshelf' && (
-        <MacOSDock items={dockItems} />
-      )}
+      <MacOSDock
+        items={dockItems}
+        activeId={currentView === 'bookshelf' ? 'home' : currentView === 'new-book' ? 'add' : currentView === '3d-map' ? '3d-map' : undefined}
+      />
     </>
   );
 }

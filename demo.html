@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Burnbook macOS UI Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            burn: {
+              pink: '#FF69B4',
+              'pink-dark': '#E0479A',
+              'pink-darker': '#C72F80',
+              'pink-light': '#FFB6D9',
+              cream: '#FFF8F0',
+              'cream-dark': '#F5E6D3',
+              black: '#1A0A0A',
+              gray: '#6B5B5B',
+              gold: '#D4A574'
+            }
+          },
+          backdropBlur: {
+            'xs': '2px',
+            'xl': '24px',
+            '2xl': '40px',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.3s ease-out',
+            'slide-up': 'slideUp 0.4s ease-out',
+            'dock-bounce': 'dockBounce 0.6s ease-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            dockBounce: {
+              '0%': { transform: 'translateY(100px)', opacity: '0' },
+              '50%': { transform: 'translateY(-10px)', opacity: '1' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Playfair+Display:wght@400;700&display=swap');
+
+    body {
+      font-family: 'Playfair Display', serif;
+    }
+
+    .font-handwritten {
+      font-family: 'Caveat', cursive;
+    }
+
+    .glass-panel {
+      backdrop-filter: blur(24px);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .glass-pink {
+      backdrop-filter: blur(24px);
+      background: rgba(255, 182, 217, 0.3);
+      border: 1px solid rgba(255, 105, 180, 0.2);
+      box-shadow: 0 8px 32px rgba(255, 105, 180, 0.1);
+    }
+
+    .glass-dark {
+      backdrop-filter: blur(40px);
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .dock-glass {
+      backdrop-filter: blur(40px);
+      background: rgba(255, 248, 240, 0.6);
+      border: 1px solid rgba(212, 165, 116, 0.4);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .dock-item {
+      transition: transform 0.3s ease-out;
+      transform-origin: bottom center;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-burn-pink-darker to-burn-black min-h-screen overflow-hidden">
+
+  <!-- Background circles for depth -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-20 left-20 w-96 h-96 bg-burn-pink rounded-full opacity-20 blur-3xl"></div>
+    <div class="absolute bottom-20 right-20 w-96 h-96 bg-burn-pink-light rounded-full opacity-20 blur-3xl"></div>
+    <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-burn-gold rounded-full opacity-10 blur-3xl"></div>
+  </div>
+
+  <!-- Header -->
+  <div class="relative z-10 p-8">
+    <div class="glass-pink p-6 rounded-2xl max-w-2xl mx-auto animate-slide-up">
+      <h1 class="font-handwritten text-5xl font-bold text-burn-pink-darker mb-2">
+        Burnbook macOS UI Demo
+      </h1>
+      <p class="text-burn-gray text-sm">
+        Showcasing glassmorphism effects, macOS dock, and Mean Girls aesthetic ✨
+      </p>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="relative z-10 flex items-center justify-center p-8 gap-6">
+
+    <!-- Card 1: Glass Panel -->
+    <div class="glass-panel p-8 rounded-2xl max-w-sm animate-fade-in" style="animation-delay: 0.1s">
+      <div class="text-white">
+        <h3 class="font-handwritten text-3xl font-bold mb-3">Glass Panel</h3>
+        <p class="text-sm mb-4 opacity-90">Frosted glass with white tint - perfect for floating controls</p>
+        <button class="glass-panel px-4 py-2 rounded-full text-sm hover:scale-105 transition-transform">
+          Hover Me
+        </button>
+      </div>
+    </div>
+
+    <!-- Card 2: Glass Pink -->
+    <div class="glass-pink p-8 rounded-2xl max-w-sm animate-fade-in" style="animation-delay: 0.2s">
+      <div class="text-burn-black">
+        <h3 class="font-handwritten text-3xl font-bold mb-3 text-burn-pink-darker">Glass Pink</h3>
+        <p class="text-sm mb-4 text-burn-gray">Pink-tinted glass for modals and primary surfaces</p>
+        <button class="bg-burn-pink text-white px-4 py-2 rounded-full text-sm hover:bg-burn-pink-dark transition-colors">
+          Create Book
+        </button>
+      </div>
+    </div>
+
+    <!-- Card 3: Glass Dark -->
+    <div class="glass-dark p-8 rounded-2xl max-w-sm animate-fade-in" style="animation-delay: 0.3s">
+      <div class="text-white">
+        <h3 class="font-handwritten text-3xl font-bold mb-3">Glass Dark</h3>
+        <p class="text-sm mb-4 opacity-90">Dark overlay glass for modal backgrounds</p>
+        <div class="flex gap-2">
+          <div class="w-3 h-3 rounded-full bg-green-400"></div>
+          <div class="w-3 h-3 rounded-full bg-blue-400"></div>
+          <div class="w-3 h-3 rounded-full bg-amber-400"></div>
+          <div class="w-3 h-3 rounded-full bg-red-400"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Showcase -->
+  <div class="relative z-10 p-8 mt-8">
+    <div class="glass-dark p-8 rounded-2xl max-w-4xl mx-auto">
+      <h2 class="font-handwritten text-4xl font-bold text-white mb-6">✨ Features Implemented</h2>
+      <div class="grid grid-cols-2 gap-6 text-white">
+        <div>
+          <h3 class="text-xl font-bold mb-2 text-burn-pink-light">🪟 Glassmorphism</h3>
+          <ul class="text-sm space-y-1 opacity-90">
+            <li>• Frosted glass backgrounds</li>
+            <li>• Multiple tint variants</li>
+            <li>• Applied to modals & controls</li>
+            <li>• Maintains pink color scheme</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold mb-2 text-burn-pink-light">🎯 macOS Dock</h3>
+          <ul class="text-sm space-y-1 opacity-90">
+            <li>• Magnification on hover (1.5x)</li>
+            <li>• Smooth animations</li>
+            <li>• 4 navigation items</li>
+            <li>• Hidden on mobile</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold mb-2 text-burn-pink-light">🌌 3D Galaxy</h3>
+          <ul class="text-sm space-y-1 opacity-90">
+            <li>• Three.js visualization</li>
+            <li>• Orbit controls</li>
+            <li>• Relationship spheres</li>
+            <li>• 200 particle atmosphere</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-xl font-bold mb-2 text-burn-pink-light">✨ Animations</h3>
+          <ul class="text-sm space-y-1 opacity-90">
+            <li>• Slide-up modals</li>
+            <li>• Fade-in overlays</li>
+            <li>• Dock bounce entrance</li>
+            <li>• Smooth transitions</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- macOS Dock -->
+  <div id="dock" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 animate-dock-bounce">
+    <div class="dock-glass rounded-2xl px-4 py-3 flex items-end gap-2">
+      <!-- Home -->
+      <div class="relative group">
+        <button class="dock-item glass-panel p-3 rounded-xl hover:bg-burn-pink-light/20 transition-all">
+          <svg class="w-7 h-7 text-burn-pink-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+        </button>
+        <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 glass-dark text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          Bookshelf
+        </div>
+      </div>
+
+      <!-- New Book -->
+      <div class="relative group">
+        <button class="dock-item glass-panel p-3 rounded-xl hover:bg-burn-pink-light/20 transition-all">
+          <svg class="w-7 h-7 text-burn-pink-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+        </button>
+        <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 glass-dark text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          New Book
+        </div>
+      </div>
+
+      <!-- 3D Galaxy -->
+      <div class="relative group">
+        <button class="dock-item glass-panel p-3 rounded-xl hover:bg-burn-pink-light/20 transition-all">
+          <svg class="w-7 h-7 text-burn-pink-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </button>
+        <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 glass-dark text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          Relationship Galaxy
+        </div>
+      </div>
+
+      <!-- Lock -->
+      <div class="relative group">
+        <button class="dock-item glass-panel p-3 rounded-xl hover:bg-burn-pink-light/20 transition-all">
+          <svg class="w-7 h-7 text-burn-pink-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+        </button>
+        <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 glass-dark text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          Lock
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="fixed top-4 right-4 glass-pink p-4 rounded-2xl max-w-xs text-sm z-50">
+    <h3 class="font-handwritten text-xl font-bold text-burn-pink-darker mb-2">💡 Try This</h3>
+    <ul class="text-burn-gray space-y-1">
+      <li>• Hover over the dock at the bottom</li>
+      <li>• Watch icons magnify on hover</li>
+      <li>• See glass effects in action</li>
+      <li>• Notice the smooth animations</li>
+    </ul>
+  </div>
+
+  <script>
+    // Dock magnification effect
+    const dock = document.getElementById('dock');
+    const dockItems = document.querySelectorAll('.dock-item');
+
+    dock.addEventListener('mousemove', (e) => {
+      const dockRect = dock.getBoundingClientRect();
+      const mouseX = e.clientX;
+
+      dockItems.forEach((item) => {
+        const itemRect = item.getBoundingClientRect();
+        const itemCenterX = itemRect.left + itemRect.width / 2;
+        const distance = Math.abs(mouseX - itemCenterX);
+        const maxDistance = 200;
+        const maxScale = 1.5;
+        const minScale = 1.0;
+
+        const scale = Math.max(
+          minScale,
+          maxScale - (distance / maxDistance) * (maxScale - minScale)
+        );
+
+        item.style.transform = `scale(${scale})`;
+      });
+    });
+
+    dock.addEventListener('mouseleave', () => {
+      dockItems.forEach((item) => {
+        item.style.transform = 'scale(1)';
+      });
+    });
+  </script>
+</body>
+</html>

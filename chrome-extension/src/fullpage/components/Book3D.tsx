@@ -18,12 +18,20 @@ function hashId(id: string): number {
   return (h >>> 0) / 4294967296;
 }
 
-function createTextTexture(text: string, fontSize: number, maxWidth: number, color = '#ffffff'): THREE.CanvasTexture {
+const SPINE_CHAR_LIMIT = 12;
+
+function createTextTexture(
+  text: string,
+  fontSize: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  color = '#ffffff',
+): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d')!;
   const scale = 4;
-  canvas.width = maxWidth * scale;
-  canvas.height = fontSize * 2 * scale;
+  canvas.width = canvasWidth * scale;
+  canvas.height = canvasHeight * scale;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.font = `bold ${fontSize * scale}px Georgia, serif`;
@@ -32,8 +40,8 @@ function createTextTexture(text: string, fontSize: number, maxWidth: number, col
   ctx.textBaseline = 'middle';
   ctx.strokeStyle = '#000000';
   ctx.lineWidth = scale * 0.5;
-  ctx.strokeText(text, canvas.width / 2, canvas.height / 2, canvas.width * 0.95);
-  ctx.fillText(text, canvas.width / 2, canvas.height / 2, canvas.width * 0.95);
+  ctx.strokeText(text, canvas.width / 2, canvas.height / 2, canvas.width * 0.9);
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2, canvas.width * 0.9);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
@@ -54,13 +62,29 @@ export default function Book3D({ book, position, offenseCount = 0, onClick }: Bo
     };
   }, [book.id]);
 
-  const nameTexture = useMemo(
-    () => createTextTexture(book.personName, 14, 128),
+  // Spine label: ALL CAPS, truncated
+  const spineLabel = useMemo(() => {
+    const upper = book.personName.toUpperCase();
+    return upper.length > SPINE_CHAR_LIMIT
+      ? upper.slice(0, SPINE_CHAR_LIMIT - 1) + '…'
+      : upper;
+  }, [book.personName]);
+
+  // Spine text: drawn horizontal on canvas, mesh rotated 90° to read bottom-to-top
+  const spineTexture = useMemo(
+    () => createTextTexture(spineLabel, 12, 128, 20),
+    [spineLabel]
+  );
+
+  // Front cover: full person name
+  const coverTexture = useMemo(
+    () => createTextTexture(book.personName, 12, 128, 28),
     [book.personName]
   );
 
+  // Front cover: title below name if set
   const titleTexture = useMemo(
-    () => book.title ? createTextTexture(book.title, 10, 128, '#dddddd') : null,
+    () => book.title ? createTextTexture(book.title, 9, 128, 20, '#dddddd') : null,
     [book.title]
   );
 
@@ -86,22 +110,31 @@ export default function Book3D({ book, position, offenseCount = 0, onClick }: Bo
         />
       </mesh>
 
-      {/* Person name on spine (canvas texture) */}
+      {/* Spine label: +Z face, text rotated to read bottom-to-top */}
+      <mesh
+        position={[0, 0, width / 2 + 0.01]}
+        rotation={[0, 0, Math.PI / 2]}
+      >
+        <planeGeometry args={[height * 0.7, depth * 0.85]} />
+        <meshBasicMaterial map={spineTexture} transparent depthWrite={false} />
+      </mesh>
+
+      {/* Front cover name: +X face */}
       <mesh
         position={[depth / 2 + 0.01, book.title ? 0.5 : 0, 0]}
         rotation={[0, Math.PI / 2, 0]}
       >
-        <planeGeometry args={[width - 0.5, 1.2]} />
-        <meshBasicMaterial map={nameTexture} transparent depthWrite={false} />
+        <planeGeometry args={[width - 0.5, 1.6]} />
+        <meshBasicMaterial map={coverTexture} transparent depthWrite={false} />
       </mesh>
 
-      {/* Book title on spine */}
+      {/* Front cover title */}
       {titleTexture && (
         <mesh
           position={[depth / 2 + 0.01, -0.8, 0]}
           rotation={[0, Math.PI / 2, 0]}
         >
-          <planeGeometry args={[width - 0.5, 0.8]} />
+          <planeGeometry args={[width - 0.5, 1]} />
           <meshBasicMaterial map={titleTexture} transparent depthWrite={false} />
         </mesh>
       )}

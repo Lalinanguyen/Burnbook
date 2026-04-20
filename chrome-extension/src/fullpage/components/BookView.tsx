@@ -1,21 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { localStorage as db } from '../../shared/storage/LocalDB';
 import { Book, Offense, Relationship } from '../../shared/types';
-import { ChevronLeft, ChevronRight, X, BookmarkPlus, Home, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, BookmarkPlus, Home, Plus, Trash2, Pencil, Phone } from 'lucide-react';
 import OffenseForm from './OffenseForm';
+import { COVER_COLORS } from './NewBookForm';
+import { RelationshipModel } from '../../shared/models/Relationship';
 
 interface BookViewProps {
   book: Book;
   onClose: () => void;
+  onBookUpdated?: (book: Book) => void;
 }
 
-export default function BookView({ book, onClose }: BookViewProps) {
+export default function BookView({ book, onClose, onBookUpdated }: BookViewProps) {
+  const [currentBook, setCurrentBook] = useState<Book>(book);
   const [currentPage, setCurrentPage] = useState(0);
   const [offenses, setOffenses] = useState<Offense[]>([]);
   const [relationship, setRelationship] = useState<Relationship | null>(null);
   const [isFlipping, setIsFlipping] = useState(false);
   const [showOffenseForm, setShowOffenseForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState(book.personName);
+  const [editColor, setEditColor] = useState(book.coverColor);
 
   useEffect(() => {
     loadBookData();
@@ -37,6 +44,32 @@ export default function BookView({ book, onClose }: BookViewProps) {
     await db.deleteBook(book.id);
     setShowDeleteConfirm(false);
     onClose();
+  };
+
+  const handleEditSave = async () => {
+    if (!editName.trim()) return;
+    await db.updateBook(currentBook.id, { personName: editName.trim(), coverColor: editColor });
+    const updated = { ...currentBook, personName: editName.trim(), coverColor: editColor, updatedAt: new Date() };
+    setCurrentBook(updated);
+    onBookUpdated?.(updated);
+    if (relationship) {
+      await db.updateRelationship(relationship.id, { personName: editName.trim() });
+      setRelationship({ ...relationship, personName: editName.trim() });
+    }
+    setShowEditModal(false);
+  };
+
+  const handleRecordContact = async () => {
+    if (!relationship) return;
+    const model = new RelationshipModel(relationship);
+    model.recordContact();
+    const updated = model.toObject();
+    await db.updateRelationship(relationship.id, {
+      lastContactDate: updated.lastContactDate,
+      strengthScore: updated.strengthScore,
+      nextReminderDate: updated.nextReminderDate,
+    });
+    setRelationship(updated);
   };
 
   const totalPages = Math.max(4, Math.ceil(offenses.length / 2) + 2);
@@ -80,10 +113,19 @@ export default function BookView({ book, onClose }: BookViewProps) {
         Add Entry
       </button>
 
+      {/* Edit button */}
+      <button
+        onClick={() => { setEditName(currentBook.personName); setEditColor(currentBook.coverColor); setShowEditModal(true); }}
+        className="absolute top-4 left-36 glass-panel hover:glass-pink text-white px-4 py-2 rounded-full flex items-center gap-2 transition-all z-50"
+      >
+        <Pencil size={20} />
+        Edit
+      </button>
+
       {/* Delete button */}
       <button
         onClick={() => setShowDeleteConfirm(true)}
-        className="absolute top-4 left-36 glass-panel hover:bg-red-600/40 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-all z-50"
+        className="absolute top-4 left-[232px] glass-panel hover:bg-red-600/40 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-all z-50"
       >
         <Trash2 size={20} />
         Delete
@@ -131,9 +173,10 @@ export default function BookView({ book, onClose }: BookViewProps) {
             >
               <PageContent
                 pageNumber={currentPage}
-                book={book}
+                book={currentBook}
                 offenses={offenses}
                 relationship={relationship}
+                onRecordContact={handleRecordContact}
               />
             </div>
 
@@ -146,9 +189,10 @@ export default function BookView({ book, onClose }: BookViewProps) {
             >
               <PageContent
                 pageNumber={currentPage + 1}
-                book={book}
+                book={currentBook}
                 offenses={offenses}
                 relationship={relationship}
+                onRecordContact={handleRecordContact}
               />
             </div>
           </div>
@@ -162,11 +206,60 @@ export default function BookView({ book, onClose }: BookViewProps) {
 
       {showOffenseForm && (
         <OffenseForm
-          bookId={book.id}
-          personName={book.personName}
+          bookId={currentBook.id}
+          personName={currentBook.personName}
           onClose={() => setShowOffenseForm(false)}
           onSave={handleOffenseSaved}
         />
+      )}
+
+      {showEditModal && (
+        <div className="fixed inset-0 glass-dark flex items-center justify-center z-[60] p-4">
+          <div className="glass-pink max-w-md w-full p-8 rounded-2xl animate-fade-in">
+            <h3 className="text-2xl font-bold text-burn-pink-darker mb-6 font-handwritten">Edit Book</h3>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-burn-black mb-2 font-serif">Name</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="input-field"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-burn-black mb-3 font-serif">Cover Color</label>
+                <div className="grid grid-cols-4 gap-3">
+                  {COVER_COLORS.map((color) => (
+                    <button
+                      key={color.value}
+                      type="button"
+                      onClick={() => setEditColor(color.value)}
+                      className={`relative h-14 rounded-lg border-4 transition-all ${
+                        editColor === color.value
+                          ? 'border-burn-pink scale-110 shadow-lg'
+                          : 'border-transparent hover:border-burn-gray-light'
+                      }`}
+                      style={{ backgroundColor: color.value }}
+                      title={color.name}
+                    >
+                      {editColor === color.value && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-white text-xl drop-shadow-lg">✓</span>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button onClick={() => setShowEditModal(false)} className="btn-secondary flex-1">Cancel</button>
+                <button onClick={handleEditSave} className="btn-primary flex-1">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {showDeleteConfirm && (
@@ -174,7 +267,7 @@ export default function BookView({ book, onClose }: BookViewProps) {
           <div className="glass-pink max-w-sm p-6 rounded-2xl animate-fade-in">
             <h3 className="text-2xl font-bold text-red-600 mb-4 font-handwritten">Delete Burn Book?</h3>
             <p className="text-burn-black mb-6 font-serif">
-              Are you sure you want to delete the burn book for <strong>{book.personName}</strong>? This action cannot be undone and all entries will be permanently deleted.
+              Are you sure you want to delete the burn book for <strong>{currentBook.personName}</strong>? This action cannot be undone and all entries will be permanently deleted.
             </p>
             <div className="flex gap-4">
               <button
@@ -202,15 +295,16 @@ interface PageContentProps {
   book: Book;
   offenses: Offense[];
   relationship: Relationship | null;
+  onRecordContact: () => void;
 }
 
-function PageContent({ pageNumber, book, offenses, relationship }: PageContentProps) {
+function PageContent({ pageNumber, book, offenses, relationship, onRecordContact }: PageContentProps) {
   if (pageNumber === 0) {
     return <CoverPage book={book} />;
   }
 
   if (pageNumber === 1) {
-    return <AboutPage book={book} relationship={relationship} />;
+    return <AboutPage book={book} relationship={relationship} onRecordContact={onRecordContact} />;
   }
 
   const offenseIndex = pageNumber - 2;
@@ -302,7 +396,7 @@ function CoverPage({ book }: { book: Book }) {
   );
 }
 
-function AboutPage({ book, relationship }: { book: Book; relationship: Relationship | null }) {
+function AboutPage({ book, relationship, onRecordContact }: { book: Book; relationship: Relationship | null; onRecordContact: () => void }) {
   return (
     <div className="w-full h-full p-12 overflow-y-auto">
       <h2 className="font-handwritten text-4xl font-bold text-[#1a1a1a] mb-6 underline">
@@ -317,11 +411,30 @@ function AboutPage({ book, relationship }: { book: Book; relationship: Relations
           </p>
         </div>
 
+        {relationship?.lastContactDate && (
+          <div>
+            <p className="font-bold mb-2">Last Contact:</p>
+            <p className="ml-4">
+              {new Date(relationship.lastContactDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </p>
+          </div>
+        )}
+
         {relationship?.notes && (
           <div>
             <p className="font-bold mb-2">Notes:</p>
             <p className="ml-4 italic">{relationship.notes}</p>
           </div>
+        )}
+
+        {relationship && (
+          <button
+            onClick={onRecordContact}
+            className="flex items-center gap-2 px-4 py-2 bg-[#98FF98]/40 hover:bg-[#98FF98]/60 border-2 border-[#2d8a2d]/30 rounded-lg transition-colors"
+          >
+            <Phone size={18} className="text-[#2d8a2d]" />
+            <span className="font-bold text-[#2d8a2d]">Record Contact</span>
+          </button>
         )}
 
         <div className="pt-6 border-t-2 border-dashed border-[#1a1a1a]/20">
