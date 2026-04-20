@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { localStorage as db } from '../../shared/storage/LocalDB';
-import { Book } from '../../shared/types';
+import { Book, Relationship } from '../../shared/types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface NewBookFormProps {
@@ -50,6 +50,27 @@ export default function NewBookForm({ onClose, onSave }: NewBookFormProps) {
       };
 
       await db.createBook(newBook);
+
+      const newRelationship: Relationship = {
+        id: uuidv4(),
+        userId: 'user-1',
+        bookId: newBook.id,
+        personName: newBook.personName,
+        relationship: 'other',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        strengthScore: 50,
+        contactFrequency: 'monthly',
+        importantDates: [],
+        positiveMoments: [],
+        reminderEnabled: false,
+        reminderFrequency: 30,
+        notes: '',
+        archived: false,
+        localModified: true,
+      };
+      await db.createRelationship(newRelationship);
+
       onSave(newBook);
     } catch (err) {
       console.error('Error creating book:', err);
@@ -58,20 +79,20 @@ export default function NewBookForm({ onClose, onSave }: NewBookFormProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="diary-cover max-w-md w-full p-8 relative">
+    <div className="fixed inset-0 glass-dark flex items-center justify-center z-50 p-4">
+      <div className="glass-pink max-w-md w-full p-8 relative rounded-2xl animate-slide-up">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-burn-gray hover:text-burn-pink transition-colors"
+          className="absolute top-4 right-4 text-burn-black hover:text-burn-pink-dark transition-colors"
         >
           <X size={24} />
         </button>
 
-        <h2 className="heading-page text-burn-pink-dark mb-6">Create a New Burn Book</h2>
+        <h2 className="heading-page text-burn-pink-darker mb-6">Create a New Burn Book</h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold text-burn-gray mb-2 font-serif">
+            <label className="block text-sm font-semibold text-burn-black mb-2 font-serif">
               Who is this book about? *
             </label>
             <input
@@ -86,7 +107,7 @@ export default function NewBookForm({ onClose, onSave }: NewBookFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-burn-gray mb-2 font-serif">
+            <label className="block text-sm font-semibold text-burn-black mb-2 font-serif">
               Custom Title (optional)
             </label>
             <input

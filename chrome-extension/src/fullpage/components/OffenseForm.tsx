@@ -63,17 +63,17 @@ export default function OffenseForm({ bookId, personName: initialPersonName, onC
   };
 
   return (
-    <div className="fixed inset-0 bg-burn-black/50 flex items-center justify-center z-50 p-4">
-      <div className="card-notebook max-w-xl w-full max-h-[90vh] overflow-y-auto relative">
+    <div className="fixed inset-0 glass-dark flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="glass-pink max-w-2xl w-full p-8 relative rounded-2xl animate-slide-up my-8">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-burn-gray hover:text-burn-pink-dark transition-colors"
+          className="absolute top-4 right-4 text-burn-black hover:text-burn-pink-darker transition-colors"
         >
           <X size={20} />
         </button>
 
-        <h2 className="heading-page text-burn-pink-dark mb-1">File a Grudge</h2>
-        <p className="subtext-sassy mb-6">Let it all out. This is a safe space (for you).</p>
+        <h2 className="heading-page text-burn-pink-darker mb-1">File a Grudge</h2>
+        <p className="subtext-sassy mb-6 text-burn-gray">Let it all out. This is a safe space (for you).</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Person */}

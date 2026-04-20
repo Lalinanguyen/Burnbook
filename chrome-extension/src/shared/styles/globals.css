@@ -76,4 +76,20 @@
   .subtext-sassy {
     @apply font-serif italic text-sm text-burn-gray;
   }
+
+  .glass-panel {
+    @apply backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl;
+  }
+
+  .glass-pink {
+    @apply backdrop-blur-xl bg-burn-pink-light/30 border border-burn-pink/20 shadow-lg;
+  }
+
+  .glass-dark {
+    @apply backdrop-blur-2xl bg-black/40 border border-white/10 shadow-2xl;
+  }
+
+  .dock-glass {
+    @apply backdrop-blur-2xl bg-burn-cream/60 border border-burn-gold/40 shadow-2xl;
+  }
 }

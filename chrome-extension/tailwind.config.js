@@ -51,9 +51,22 @@ module.exports = {
         '1500': '1500px',
         '2000': '2000px',
       },
+      backdropBlur: {
+        'xs': '2px',
+        'sm': '4px',
+        'DEFAULT': '8px',
+        'md': '12px',
+        'lg': '16px',
+        'xl': '24px',
+        '2xl': '40px',
+        '3xl': '64px',
+      },
       animation: {
         'page-flip-left': 'pageFlipLeft 0.6s ease-in-out',
         'page-flip-right': 'pageFlipRight 0.6s ease-in-out',
+        'fade-in': 'fadeIn 0.3s ease-out',
+        'slide-up': 'slideUp 0.4s ease-out',
+        'dock-bounce': 'dockBounce 0.6s ease-out',
       },
       keyframes: {
         pageFlipLeft: {
@@ -63,6 +76,19 @@ module.exports = {
         pageFlipRight: {
           '0%': { transform: 'rotateY(0deg)' },
           '100%': { transform: 'rotateY(180deg)' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { transform: 'translateY(20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        dockBounce: {
+          '0%': { transform: 'translateY(100px)', opacity: '0' },
+          '50%': { transform: 'translateY(-10px)', opacity: '1' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
         },
       }
     }

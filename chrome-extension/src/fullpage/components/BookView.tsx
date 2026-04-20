@@ -66,15 +66,15 @@ export default function BookView({ book, onClose }: BookViewProps) {
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 text-white hover:text-[#FF69B4] transition-colors z-50"
+        className="absolute top-4 right-4 glass-panel hover:glass-pink text-white rounded-full p-3 transition-all z-50"
       >
-        <Home size={32} />
+        <Home size={20} />
       </button>
 
       {/* Add offense button */}
       <button
         onClick={() => setShowOffenseForm(true)}
-        className="absolute top-4 left-4 bg-[#FF1493] hover:bg-[#FF69B4] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors z-50"
+        className="absolute top-4 left-4 glass-pink hover:bg-burn-pink/40 text-burn-black px-4 py-2 rounded-full flex items-center gap-2 transition-all z-50"
       >
         <Plus size={20} />
         Add Entry
@@ -83,7 +83,7 @@ export default function BookView({ book, onClose }: BookViewProps) {
       {/* Delete button */}
       <button
         onClick={() => setShowDeleteConfirm(true)}
-        className="absolute top-4 left-32 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors z-50"
+        className="absolute top-4 left-36 glass-panel hover:bg-red-600/40 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-all z-50"
       >
         <Trash2 size={20} />
         Delete
@@ -96,9 +96,9 @@ export default function BookView({ book, onClose }: BookViewProps) {
           <button
             onClick={prevPage}
             disabled={isFlipping}
-            className="absolute -left-16 z-20 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all disabled:opacity-50"
+            className="absolute -left-16 z-20 glass-panel hover:glass-pink text-white rounded-full p-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ChevronLeft size={32} />
+            <ChevronLeft size={24} />
           </button>
         )}
 
@@ -106,9 +106,9 @@ export default function BookView({ book, onClose }: BookViewProps) {
           <button
             onClick={nextPage}
             disabled={isFlipping}
-            className="absolute -right-16 z-20 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all disabled:opacity-50"
+            className="absolute -right-16 z-20 glass-panel hover:glass-pink text-white rounded-full p-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ChevronRight size={32} />
+            <ChevronRight size={24} />
           </button>
         )}
 
@@ -155,8 +155,8 @@ export default function BookView({ book, onClose }: BookViewProps) {
         </div>
 
         {/* Page counter */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white font-serif text-sm bg-black/50 px-4 py-2 rounded-full">
-          Pages {currentPage + 1}-{currentPage + 2} of {totalPages}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 glass-dark text-white font-serif text-sm px-6 py-3 rounded-full">
+          Page {currentPage + 1} of {totalPages}
         </div>
       </div>
 
@@ -170,22 +170,22 @@ export default function BookView({ book, onClose }: BookViewProps) {
       )}
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-sm shadow-2xl">
-            <h3 className="text-2xl font-bold text-red-600 mb-4">Delete Burn Book?</h3>
-            <p className="text-gray-700 mb-6">
+        <div className="fixed inset-0 glass-dark flex items-center justify-center z-50">
+          <div className="glass-pink max-w-sm p-6 rounded-2xl animate-fade-in">
+            <h3 className="text-2xl font-bold text-red-600 mb-4 font-handwritten">Delete Burn Book?</h3>
+            <p className="text-burn-black mb-6 font-serif">
               Are you sure you want to delete the burn book for <strong>{book.personName}</strong>? This action cannot be undone and all entries will be permanently deleted.
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition-colors"
+                className="btn-secondary flex-1"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteBook}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                className="btn-danger flex-1"
               >
                 Delete
               </button>
