@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { localStorage as db } from '../shared/storage/LocalDB';
 import { passwordManager, secureStorage } from '../shared/utils/encryption';
 import { Book } from '../shared/types';
-import { Lock, Home, Plus, LockKeyhole, Globe } from 'lucide-react';
+import { Lock, Home, Plus, LockKeyhole, Globe, Settings } from 'lucide-react';
 import Bookshelf3D from './components/Bookshelf3D';
 import BookView from './components/BookView';
 import NewBookForm from './components/NewBookForm';
 import MacOSDock from './components/MacOSDock';
 import RelationshipMap3D from './components/RelationshipMap3D';
+import SettingsView from './components/SettingsView';
 
-type AppView = 'bookshelf' | 'book' | 'new-book' | '3d-map';
+type AppView = 'bookshelf' | 'book' | 'new-book' | '3d-map' | 'settings';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -119,6 +120,12 @@ function App() {
       onClick: () => setCurrentView('3d-map')
     },
     {
+      id: 'settings',
+      icon: Settings,
+      label: 'Settings',
+      onClick: () => setCurrentView('settings')
+    },
+    {
       id: 'lock',
       icon: LockKeyhole,
       label: 'Lock',
@@ -221,9 +228,11 @@ function App() {
         />
       )}
 
+      {currentView === 'settings' && <SettingsView />}
+
       <MacOSDock
         items={dockItems}
-        activeId={currentView === 'bookshelf' ? 'home' : currentView === 'new-book' ? 'add' : currentView === '3d-map' ? '3d-map' : undefined}
+        activeId={currentView === 'bookshelf' ? 'home' : currentView === 'new-book' ? 'add' : currentView === '3d-map' ? '3d-map' : currentView === 'settings' ? 'settings' : undefined}
       />
     </>
   );
