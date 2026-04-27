@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { localStorage as db } from '../../shared/storage/LocalDB';
 import { Book, Offense, Relationship } from '../../shared/types';
-import { ChevronLeft, ChevronRight, X, BookmarkPlus, Home, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Plus, Trash2 } from 'lucide-react';
 import OffenseForm from './OffenseForm';
+import InsideCoverPage from './InsideCoverPage';
+import GoodMemoriesView from './GoodMemoriesView';
+import YapView from './YapView';
+
+type BookTab = 'burn' | 'memories' | 'yap';
 
 interface BookViewProps {
   book: Book;
@@ -10,6 +15,7 @@ interface BookViewProps {
 }
 
 export default function BookView({ book, onClose }: BookViewProps) {
+  const [activeTab, setActiveTab] = useState<BookTab>('burn');
   const [currentPage, setCurrentPage] = useState(0);
   const [offenses, setOffenses] = useState<Offense[]>([]);
   const [relationship, setRelationship] = useState<Relationship | null>(null);
@@ -62,103 +68,111 @@ export default function BookView({ book, onClose }: BookViewProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 text-white hover:text-[#FF69B4] transition-colors z-50"
-      >
-        <Home size={32} />
-      </button>
-
-      {/* Add offense button */}
-      <button
-        onClick={() => setShowOffenseForm(true)}
-        className="absolute top-4 left-4 bg-[#FF1493] hover:bg-[#FF69B4] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors z-50"
-      >
-        <Plus size={20} />
-        Add Entry
-      </button>
-
-      {/* Delete button */}
-      <button
-        onClick={() => setShowDeleteConfirm(true)}
-        className="absolute top-4 left-32 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors z-50"
-      >
-        <Trash2 size={20} />
-        Delete
-      </button>
-
-      {/* Book */}
-      <div className="relative w-full max-w-6xl h-[85vh] flex items-center justify-center overflow-visible px-20">
-        {/* Navigation arrows */}
-        {currentPage > 0 && (
+    <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50 p-4">
+      {/* Top bar */}
+      <div className="w-full max-w-6xl flex items-center justify-between mb-3 z-50">
+        {/* Left controls */}
+        <div className="flex items-center gap-2">
           <button
-            onClick={prevPage}
-            disabled={isFlipping}
-            className="absolute -left-16 z-20 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all disabled:opacity-50"
+            onClick={onClose}
+            className="text-white hover:text-[#FF69B4] transition-colors"
           >
-            <ChevronLeft size={32} />
+            <Home size={28} />
           </button>
-        )}
-
-        {currentPage < totalPages - 2 && (
+          {activeTab === 'burn' && (
+            <button
+              onClick={() => setShowOffenseForm(true)}
+              className="bg-[#FF1493] hover:bg-[#FF69B4] text-white px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors text-sm"
+            >
+              <Plus size={16} />
+              Add Entry
+            </button>
+          )}
           <button
-            onClick={nextPage}
-            disabled={isFlipping}
-            className="absolute -right-16 z-20 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all disabled:opacity-50"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors text-sm"
           >
-            <ChevronRight size={32} />
+            <Trash2 size={16} />
+            Delete
           </button>
-        )}
+        </div>
 
-        {/* Open book */}
-        <div className="relative w-full h-full flex items-center justify-center perspective-1000">
-          <div
-            className={`relative w-full h-full flex shadow-2xl transition-all duration-600 ${
-              isFlipping ? 'scale-95' : 'scale-100'
-            }`}
-            style={{
-              transformStyle: 'preserve-3d',
-            }}
-          >
-            {/* Left page */}
-            <div
-              className="w-1/2 h-full bg-[#FFF8DC] border-r-2 border-[#D2691E] relative overflow-hidden"
-              style={{
-                boxShadow: 'inset -10px 0 20px rgba(0,0,0,0.1)',
-              }}
+        {/* Tab switcher */}
+        <div className="flex items-center gap-1 bg-black/40 rounded-xl p-1">
+          {([['burn', '🔥 Burn Book'], ['memories', '📸 Good Memories'], ['yap', '💬 Yap']] as [BookTab, string][]).map(([tab, label]) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-handwritten transition-all ${
+                activeTab === tab
+                  ? 'bg-[#FF69B4] text-white shadow-sm'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
             >
-              <PageContent
-                pageNumber={currentPage}
-                book={book}
-                offenses={offenses}
-                relationship={relationship}
-              />
-            </div>
+              {label}
+            </button>
+          ))}
+        </div>
 
-            {/* Right page */}
-            <div
-              className="w-1/2 h-full bg-[#FFF8DC] border-l-2 border-[#D2691E] relative overflow-hidden"
-              style={{
-                boxShadow: 'inset 10px 0 20px rgba(0,0,0,0.1)',
-              }}
+        <div className="w-32" /> {/* spacer */}
+      </div>
+
+      {/* Book — Burn Tab */}
+      {activeTab === 'burn' && (
+        <div className="relative w-full max-w-6xl flex-1 flex items-center justify-center overflow-visible px-20" style={{ minHeight: 0 }}>
+          {currentPage > 0 && (
+            <button
+              onClick={prevPage}
+              disabled={isFlipping}
+              className="absolute -left-16 z-20 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all disabled:opacity-50"
             >
-              <PageContent
-                pageNumber={currentPage + 1}
-                book={book}
-                offenses={offenses}
-                relationship={relationship}
-              />
+              <ChevronLeft size={32} />
+            </button>
+          )}
+
+          {currentPage < totalPages - 2 && (
+            <button
+              onClick={nextPage}
+              disabled={isFlipping}
+              className="absolute -right-16 z-20 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all disabled:opacity-50"
+            >
+              <ChevronRight size={32} />
+            </button>
+          )}
+
+          <div className="relative w-full h-full flex items-center justify-center perspective-1000">
+            <div
+              className={`relative w-full h-full flex shadow-2xl transition-all duration-600 ${isFlipping ? 'scale-95' : 'scale-100'}`}
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              <div className="w-1/2 h-full bg-[#FFF8DC] border-r-2 border-[#D2691E] relative overflow-hidden" style={{ boxShadow: 'inset -10px 0 20px rgba(0,0,0,0.1)' }}>
+                <PageContent pageNumber={currentPage} book={book} offenses={offenses} relationship={relationship} onUpdateRelationship={loadBookData} />
+              </div>
+              <div className="w-1/2 h-full bg-[#FFF8DC] border-l-2 border-[#D2691E] relative overflow-hidden" style={{ boxShadow: 'inset 10px 0 20px rgba(0,0,0,0.1)' }}>
+                <PageContent pageNumber={currentPage + 1} book={book} offenses={offenses} relationship={relationship} onUpdateRelationship={loadBookData} />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Page counter */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white font-serif text-sm bg-black/50 px-4 py-2 rounded-full">
-          Pages {currentPage + 1}-{currentPage + 2} of {totalPages}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white font-serif text-sm bg-black/50 px-4 py-2 rounded-full">
+            Pages {currentPage + 1}-{currentPage + 2} of {totalPages}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Good Memories Tab */}
+      {activeTab === 'memories' && (
+        <div className="w-full max-w-6xl flex-1 flex flex-col shadow-2xl rounded-sm overflow-hidden" style={{ minHeight: 0 }}>
+          <GoodMemoriesView bookId={book.id} />
+        </div>
+      )}
+
+      {/* Yap Tab */}
+      {activeTab === 'yap' && (
+        <div className="w-full max-w-6xl flex-1 flex flex-col shadow-2xl rounded-sm overflow-hidden bg-[#FFF8DC]" style={{ minHeight: 0 }}>
+          <YapView bookId={book.id} />
+        </div>
+      )}
 
       {showOffenseForm && (
         <OffenseForm
@@ -202,15 +216,16 @@ interface PageContentProps {
   book: Book;
   offenses: Offense[];
   relationship: Relationship | null;
+  onUpdateRelationship: () => void;
 }
 
-function PageContent({ pageNumber, book, offenses, relationship }: PageContentProps) {
+function PageContent({ pageNumber, book, offenses, relationship, onUpdateRelationship }: PageContentProps) {
   if (pageNumber === 0) {
     return <CoverPage book={book} />;
   }
 
   if (pageNumber === 1) {
-    return <AboutPage book={book} relationship={relationship} />;
+    return <InsideCoverPage book={book} relationship={relationship} onUpdate={onUpdateRelationship} />;
   }
 
   const offenseIndex = pageNumber - 2;
@@ -302,37 +317,6 @@ function CoverPage({ book }: { book: Book }) {
   );
 }
 
-function AboutPage({ book, relationship }: { book: Book; relationship: Relationship | null }) {
-  return (
-    <div className="w-full h-full p-12 overflow-y-auto">
-      <h2 className="font-handwritten text-4xl font-bold text-[#1a1a1a] mb-6 underline">
-        About {book.personName}
-      </h2>
-
-      <div className="space-y-6 font-handwritten text-lg text-[#1a1a1a]">
-        <div>
-          <p className="font-bold mb-2">Status:</p>
-          <p className="ml-4">
-            {relationship ? `${relationship.relationship} — Strength Score: ${relationship.strengthScore}` : 'Keeping tabs on them...'}
-          </p>
-        </div>
-
-        {relationship?.notes && (
-          <div>
-            <p className="font-bold mb-2">Notes:</p>
-            <p className="ml-4 italic">{relationship.notes}</p>
-          </div>
-        )}
-
-        <div className="pt-6 border-t-2 border-dashed border-[#1a1a1a]/20">
-          <p className="text-sm italic text-[#1a1a1a]/60">
-            This book documents everything they've done. Every. Single. Thing.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function OffensePage({ offense }: { offense: Offense }) {
   return (

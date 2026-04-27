@@ -5,9 +5,8 @@ import { Book } from '../shared/types';
 import { Lock } from 'lucide-react';
 import Bookshelf from './components/Bookshelf';
 import BookView from './components/BookView';
-import NewBookForm from './components/NewBookForm';
 
-type AppView = 'bookshelf' | 'book' | 'new-book';
+type AppView = 'bookshelf' | 'book';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -73,19 +72,6 @@ function App() {
 
   const handleCloseBook = () => {
     setSelectedBook(null);
-    setCurrentView('bookshelf');
-  };
-
-  const handleCreateBook = () => {
-    setCurrentView('new-book');
-  };
-
-  const handleBookCreated = (book: Book) => {
-    setSelectedBook(book);
-    setCurrentView('book');
-  };
-
-  const handleCloseNewBook = () => {
     setCurrentView('bookshelf');
   };
 
@@ -155,7 +141,6 @@ function App() {
       {currentView === 'bookshelf' && (
         <Bookshelf
           onSelectBook={handleSelectBook}
-          onCreateBook={handleCreateBook}
         />
       )}
 
@@ -163,13 +148,6 @@ function App() {
         <BookView
           book={selectedBook}
           onClose={handleCloseBook}
-        />
-      )}
-
-      {currentView === 'new-book' && (
-        <NewBookForm
-          onClose={handleCloseNewBook}
-          onSave={handleBookCreated}
         />
       )}
     </>
