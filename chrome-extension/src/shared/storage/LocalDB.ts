@@ -1,5 +1,6 @@
 import Dexie, { Table } from 'dexie';
-import { Offense, Relationship, UserSettings, Book } from '../types';
+import { v4 as uuidv4 } from 'uuid';
+import { Offense, Relationship, UserSettings, Book, MemoryPage, ScrapbookItem, Rant } from '../types';
 import { APP_CONFIG } from '../constants';
 
 export class BurnBookDB extends Dexie {
@@ -7,6 +8,9 @@ export class BurnBookDB extends Dexie {
   offenses!: Table<Offense, string>;
   relationships!: Table<Relationship, string>;
   settings!: Table<UserSettings, string>;
+  memoryPages!: Table<MemoryPage, string>;
+  scrapbookItems!: Table<ScrapbookItem, string>;
+  rants!: Table<Rant, string>;
 
   constructor() {
     super(APP_CONFIG.DB_NAME);
@@ -24,6 +28,17 @@ export class BurnBookDB extends Dexie {
       offenses: 'id, userId, bookId, personName, personId, occurrenceDate, severity, createdAt, archived, localModified',
       relationships: 'id, userId, bookId, personName, strengthScore, lastContactDate, nextReminderDate, archived, localModified',
       settings: 'userId'
+    });
+
+    // V3: Good Memories, Yap (rants), scrapbook items
+    this.version(3).stores({
+      books: 'id, userId, personName, createdAt, archived',
+      offenses: 'id, userId, bookId, personName, personId, occurrenceDate, severity, createdAt, archived, localModified',
+      relationships: 'id, userId, bookId, personName, strengthScore, lastContactDate, nextReminderDate, archived, localModified',
+      settings: 'userId',
+      memoryPages: 'id, bookId, pageOrder',
+      scrapbookItems: 'id, pageId, bookId, type',
+      rants: 'id, bookId, createdAt'
     });
   }
 }
@@ -56,6 +71,10 @@ export class LocalStorage {
 
   async deleteBook(id: string): Promise<void> {
     await db.books.delete(id);
+    const pages = await db.memoryPages.where('bookId').equals(id).toArray();
+    await Promise.all(pages.map(p => db.scrapbookItems.where('pageId').equals(p.id).delete()));
+    await db.memoryPages.where('bookId').equals(id).delete();
+    await db.rants.where('bookId').equals(id).delete();
   }
 
   // ===== OFFENSES =====
@@ -194,6 +213,92 @@ export class LocalStorage {
   async settingsExist(): Promise<boolean> {
     const count = await db.settings.count();
     return count > 0;
+  }
+
+  // ===== MEMORY PAGES =====
+
+  async createMemoryPage(page: MemoryPage): Promise<void> {
+    await db.memoryPages.add(page);
+  }
+
+  async getMemoryPagesByBook(bookId: string): Promise<MemoryPage[]> {
+    return await db.memoryPages.where('bookId').equals(bookId).sortBy('pageOrder');
+  }
+
+  async updateMemoryPage(id: string, updates: Partial<MemoryPage>): Promise<void> {
+    await db.memoryPages.update(id, { ...updates, updatedAt: new Date() });
+  }
+
+  async deleteMemoryPage(id: string): Promise<void> {
+    await db.scrapbookItems.where('pageId').equals(id).delete();
+    await db.memoryPages.delete(id);
+  }
+
+  async ensureTrailingBlankPage(bookId: string): Promise<void> {
+    const pages = await db.memoryPages.where('bookId').equals(bookId).sortBy('pageOrder');
+
+    const makeBlank = (order: number): MemoryPage => ({
+      id: uuidv4(),
+      bookId,
+      pageOrder: order,
+      title: '',
+      caption: '',
+      backgroundStyle: 'lined',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    if (pages.length === 0) {
+      await db.memoryPages.add(makeBlank(0));
+      return;
+    }
+
+    const lastPage = pages[pages.length - 1];
+    const count = await db.scrapbookItems.where('pageId').equals(lastPage.id).count();
+    if (count > 0) {
+      await db.memoryPages.add(makeBlank(lastPage.pageOrder + 1));
+    }
+  }
+
+  // ===== SCRAPBOOK ITEMS =====
+
+  async createScrapbookItem(item: ScrapbookItem): Promise<void> {
+    await db.scrapbookItems.add(item);
+  }
+
+  async getScrapbookItemsByPage(pageId: string): Promise<ScrapbookItem[]> {
+    return await db.scrapbookItems.where('pageId').equals(pageId).toArray();
+  }
+
+  async getScrapbookItemsByBook(bookId: string): Promise<ScrapbookItem[]> {
+    return await db.scrapbookItems.where('bookId').equals(bookId).toArray();
+  }
+
+  async updateScrapbookItem(id: string, updates: Partial<ScrapbookItem>): Promise<void> {
+    await db.scrapbookItems.update(id, { ...updates, updatedAt: new Date() });
+  }
+
+  async deleteScrapbookItem(id: string): Promise<void> {
+    await db.scrapbookItems.delete(id);
+  }
+
+  // ===== RANTS =====
+
+  async createRant(rant: Rant): Promise<void> {
+    await db.rants.add(rant);
+  }
+
+  async getRantsByBook(bookId: string): Promise<Rant[]> {
+    const all = await db.rants.where('bookId').equals(bookId).toArray();
+    return all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async updateRant(id: string, updates: Partial<Rant>): Promise<void> {
+    await db.rants.update(id, { ...updates, updatedAt: new Date() });
+  }
+
+  async deleteRant(id: string): Promise<void> {
+    await db.rants.delete(id);
   }
 
   // ===== UTILITY =====

@@ -83,9 +83,8 @@ function App() {
     setCurrentView('new-book');
   };
 
-  const handleBookCreated = (book: Book) => {
-    setSelectedBook(book);
-    setCurrentView('book');
+  const handleBookCreated = () => {
+    setCurrentView('bookshelf');
   };
 
   const handleCloseNewBook = () => {
@@ -207,7 +206,6 @@ function App() {
         <BookView
           book={selectedBook}
           onClose={handleCloseBook}
-          onBookUpdated={(updated) => setSelectedBook(updated)}
         />
       )}
 

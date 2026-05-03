@@ -1,28 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { localStorage as db } from '../../shared/storage/LocalDB';
 import { Book, Offense, Relationship } from '../../shared/types';
-import { ChevronLeft, ChevronRight, X, BookmarkPlus, Home, Plus, Trash2, Pencil, Phone } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Plus, Trash2 } from 'lucide-react';
 import OffenseForm from './OffenseForm';
-import { COVER_COLORS } from './NewBookForm';
-import { RelationshipModel } from '../../shared/models/Relationship';
+import InsideCoverPage from './InsideCoverPage';
+import GoodMemoriesView from './GoodMemoriesView';
+import YapView from './YapView';
+
+type BookTab = 'burn' | 'memories' | 'yap';
 
 interface BookViewProps {
   book: Book;
   onClose: () => void;
-  onBookUpdated?: (book: Book) => void;
 }
 
-export default function BookView({ book, onClose, onBookUpdated }: BookViewProps) {
-  const [currentBook, setCurrentBook] = useState<Book>(book);
+export default function BookView({ book, onClose }: BookViewProps) {
+  const [activeTab, setActiveTab] = useState<BookTab>('burn');
   const [currentPage, setCurrentPage] = useState(0);
   const [offenses, setOffenses] = useState<Offense[]>([]);
   const [relationship, setRelationship] = useState<Relationship | null>(null);
   const [isFlipping, setIsFlipping] = useState(false);
   const [showOffenseForm, setShowOffenseForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editName, setEditName] = useState(book.personName);
-  const [editColor, setEditColor] = useState(book.coverColor);
 
   useEffect(() => {
     loadBookData();
@@ -44,32 +43,6 @@ export default function BookView({ book, onClose, onBookUpdated }: BookViewProps
     await db.deleteBook(book.id);
     setShowDeleteConfirm(false);
     onClose();
-  };
-
-  const handleEditSave = async () => {
-    if (!editName.trim()) return;
-    await db.updateBook(currentBook.id, { personName: editName.trim(), coverColor: editColor });
-    const updated = { ...currentBook, personName: editName.trim(), coverColor: editColor, updatedAt: new Date() };
-    setCurrentBook(updated);
-    onBookUpdated?.(updated);
-    if (relationship) {
-      await db.updateRelationship(relationship.id, { personName: editName.trim() });
-      setRelationship({ ...relationship, personName: editName.trim() });
-    }
-    setShowEditModal(false);
-  };
-
-  const handleRecordContact = async () => {
-    if (!relationship) return;
-    const model = new RelationshipModel(relationship);
-    model.recordContact();
-    const updated = model.toObject();
-    await db.updateRelationship(relationship.id, {
-      lastContactDate: updated.lastContactDate,
-      strengthScore: updated.strengthScore,
-      nextReminderDate: updated.nextReminderDate,
-    });
-    setRelationship(updated);
   };
 
   const totalPages = Math.max(4, Math.ceil(offenses.length / 2) + 2);
@@ -95,190 +68,138 @@ export default function BookView({ book, onClose, onBookUpdated }: BookViewProps
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 glass-panel hover:glass-pink text-white rounded-full p-3 transition-all z-50"
-      >
-        <Home size={20} />
-      </button>
-
-      {/* Add offense button */}
-      <button
-        onClick={() => setShowOffenseForm(true)}
-        className="absolute top-4 left-4 glass-pink hover:bg-burn-pink/40 text-burn-black px-4 py-2 rounded-full flex items-center gap-2 transition-all z-50"
-      >
-        <Plus size={20} />
-        Add Entry
-      </button>
-
-      {/* Edit button */}
-      <button
-        onClick={() => { setEditName(currentBook.personName); setEditColor(currentBook.coverColor); setShowEditModal(true); }}
-        className="absolute top-4 left-36 glass-panel hover:glass-pink text-white px-4 py-2 rounded-full flex items-center gap-2 transition-all z-50"
-      >
-        <Pencil size={20} />
-        Edit
-      </button>
-
-      {/* Delete button */}
-      <button
-        onClick={() => setShowDeleteConfirm(true)}
-        className="absolute top-4 left-[232px] glass-panel hover:bg-red-600/40 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-all z-50"
-      >
-        <Trash2 size={20} />
-        Delete
-      </button>
-
-      {/* Book */}
-      <div className="relative w-full max-w-6xl h-[85vh] flex items-center justify-center overflow-visible px-20">
-        {/* Navigation arrows */}
-        {currentPage > 0 && (
+    <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50 p-4">
+      {/* Top bar */}
+      <div className="w-full max-w-6xl flex items-center justify-between mb-3 z-50">
+        {/* Left controls */}
+        <div className="flex items-center gap-2">
           <button
-            onClick={prevPage}
-            disabled={isFlipping}
-            className="absolute -left-16 z-20 glass-panel hover:glass-pink text-white rounded-full p-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={onClose}
+            className="text-white hover:text-[#FF69B4] transition-colors"
           >
-            <ChevronLeft size={24} />
+            <Home size={28} />
           </button>
-        )}
-
-        {currentPage < totalPages - 2 && (
+          {activeTab === 'burn' && (
+            <button
+              onClick={() => setShowOffenseForm(true)}
+              className="bg-[#FF1493] hover:bg-[#FF69B4] text-white px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors text-sm"
+            >
+              <Plus size={16} />
+              Add Entry
+            </button>
+          )}
           <button
-            onClick={nextPage}
-            disabled={isFlipping}
-            className="absolute -right-16 z-20 glass-panel hover:glass-pink text-white rounded-full p-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors text-sm"
           >
-            <ChevronRight size={24} />
+            <Trash2 size={16} />
+            Delete
           </button>
-        )}
+        </div>
 
-        {/* Open book */}
-        <div className="relative w-full h-full flex items-center justify-center perspective-1000">
-          <div
-            className={`relative w-full h-full flex shadow-2xl transition-all duration-600 ${
-              isFlipping ? 'scale-95' : 'scale-100'
-            }`}
-            style={{
-              transformStyle: 'preserve-3d',
-            }}
-          >
-            {/* Left page */}
-            <div
-              className="w-1/2 h-full bg-[#FFF8DC] border-r-2 border-[#D2691E] relative overflow-hidden"
-              style={{
-                boxShadow: 'inset -10px 0 20px rgba(0,0,0,0.1)',
-              }}
+        {/* Tab switcher */}
+        <div className="flex items-center gap-1 bg-black/40 rounded-xl p-1">
+          {([['burn', '🔥 Burn Book'], ['memories', '📸 Good Memories'], ['yap', '💬 Yap']] as [BookTab, string][]).map(([tab, label]) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-handwritten transition-all ${
+                activeTab === tab
+                  ? 'bg-[#FF69B4] text-white shadow-sm'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
             >
-              <PageContent
-                pageNumber={currentPage}
-                book={currentBook}
-                offenses={offenses}
-                relationship={relationship}
-                onRecordContact={handleRecordContact}
-              />
-            </div>
+              {label}
+            </button>
+          ))}
+        </div>
 
-            {/* Right page */}
-            <div
-              className="w-1/2 h-full bg-[#FFF8DC] border-l-2 border-[#D2691E] relative overflow-hidden"
-              style={{
-                boxShadow: 'inset 10px 0 20px rgba(0,0,0,0.1)',
-              }}
+        <div className="w-32" /> {/* spacer */}
+      </div>
+
+      {/* Book — Burn Tab */}
+      {activeTab === 'burn' && (
+        <div className="relative w-full max-w-6xl flex-1 flex items-center justify-center overflow-visible px-20" style={{ minHeight: 0 }}>
+          {currentPage > 0 && (
+            <button
+              onClick={prevPage}
+              disabled={isFlipping}
+              className="absolute -left-16 z-20 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all disabled:opacity-50"
             >
-              <PageContent
-                pageNumber={currentPage + 1}
-                book={currentBook}
-                offenses={offenses}
-                relationship={relationship}
-                onRecordContact={handleRecordContact}
-              />
+              <ChevronLeft size={32} />
+            </button>
+          )}
+
+          {currentPage < totalPages - 2 && (
+            <button
+              onClick={nextPage}
+              disabled={isFlipping}
+              className="absolute -right-16 z-20 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all disabled:opacity-50"
+            >
+              <ChevronRight size={32} />
+            </button>
+          )}
+
+          <div className="relative w-full h-full flex items-center justify-center perspective-1000">
+            <div
+              className={`relative w-full h-full flex shadow-2xl transition-all duration-600 ${isFlipping ? 'scale-95' : 'scale-100'}`}
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              <div className="w-1/2 h-full bg-[#FFF8DC] border-r-2 border-[#D2691E] relative overflow-hidden" style={{ boxShadow: 'inset -10px 0 20px rgba(0,0,0,0.1)' }}>
+                <PageContent pageNumber={currentPage} book={book} offenses={offenses} relationship={relationship} onUpdateRelationship={loadBookData} />
+              </div>
+              <div className="w-1/2 h-full bg-[#FFF8DC] border-l-2 border-[#D2691E] relative overflow-hidden" style={{ boxShadow: 'inset 10px 0 20px rgba(0,0,0,0.1)' }}>
+                <PageContent pageNumber={currentPage + 1} book={book} offenses={offenses} relationship={relationship} onUpdateRelationship={loadBookData} />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Page counter */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 glass-dark text-white font-serif text-sm px-6 py-3 rounded-full">
-          Page {currentPage + 1} of {totalPages}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white font-serif text-sm bg-black/50 px-4 py-2 rounded-full">
+            Pages {currentPage + 1}-{currentPage + 2} of {totalPages}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Good Memories Tab */}
+      {activeTab === 'memories' && (
+        <div className="w-full max-w-6xl flex-1 flex flex-col shadow-2xl rounded-sm overflow-hidden" style={{ minHeight: 0 }}>
+          <GoodMemoriesView bookId={book.id} />
+        </div>
+      )}
+
+      {/* Yap Tab */}
+      {activeTab === 'yap' && (
+        <div className="w-full max-w-6xl flex-1 flex flex-col shadow-2xl rounded-sm overflow-hidden bg-[#FFF8DC]" style={{ minHeight: 0 }}>
+          <YapView bookId={book.id} />
+        </div>
+      )}
 
       {showOffenseForm && (
         <OffenseForm
-          bookId={currentBook.id}
-          personName={currentBook.personName}
+          bookId={book.id}
+          personName={book.personName}
           onClose={() => setShowOffenseForm(false)}
           onSave={handleOffenseSaved}
         />
       )}
 
-      {showEditModal && (
-        <div className="fixed inset-0 glass-dark flex items-center justify-center z-[60] p-4">
-          <div className="glass-pink max-w-md w-full p-8 rounded-2xl animate-fade-in">
-            <h3 className="text-2xl font-bold text-burn-pink-darker mb-6 font-handwritten">Edit Book</h3>
-            <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-burn-black mb-2 font-serif">Name</label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="input-field"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-burn-black mb-3 font-serif">Cover Color</label>
-                <div className="grid grid-cols-4 gap-3">
-                  {COVER_COLORS.map((color) => (
-                    <button
-                      key={color.value}
-                      type="button"
-                      onClick={() => setEditColor(color.value)}
-                      className={`relative h-14 rounded-lg border-4 transition-all ${
-                        editColor === color.value
-                          ? 'border-burn-pink scale-110 shadow-lg'
-                          : 'border-transparent hover:border-burn-gray-light'
-                      }`}
-                      style={{ backgroundColor: color.value }}
-                      title={color.name}
-                    >
-                      {editColor === color.value && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-white text-xl drop-shadow-lg">✓</span>
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button onClick={() => setShowEditModal(false)} className="btn-secondary flex-1">Cancel</button>
-                <button onClick={handleEditSave} className="btn-primary flex-1">Save</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showDeleteConfirm && (
-        <div className="fixed inset-0 glass-dark flex items-center justify-center z-50">
-          <div className="glass-pink max-w-sm p-6 rounded-2xl animate-fade-in">
-            <h3 className="text-2xl font-bold text-red-600 mb-4 font-handwritten">Delete Burn Book?</h3>
-            <p className="text-burn-black mb-6 font-serif">
-              Are you sure you want to delete the burn book for <strong>{currentBook.personName}</strong>? This action cannot be undone and all entries will be permanently deleted.
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-sm shadow-2xl">
+            <h3 className="text-2xl font-bold text-red-600 mb-4">Delete Burn Book?</h3>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete the burn book for <strong>{book.personName}</strong>? This action cannot be undone and all entries will be permanently deleted.
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="btn-secondary flex-1"
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteBook}
-                className="btn-danger flex-1"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors"
               >
                 Delete
               </button>
@@ -295,16 +216,16 @@ interface PageContentProps {
   book: Book;
   offenses: Offense[];
   relationship: Relationship | null;
-  onRecordContact: () => void;
+  onUpdateRelationship: () => void;
 }
 
-function PageContent({ pageNumber, book, offenses, relationship, onRecordContact }: PageContentProps) {
+function PageContent({ pageNumber, book, offenses, relationship, onUpdateRelationship }: PageContentProps) {
   if (pageNumber === 0) {
     return <CoverPage book={book} />;
   }
 
   if (pageNumber === 1) {
-    return <AboutPage book={book} relationship={relationship} onRecordContact={onRecordContact} />;
+    return <InsideCoverPage book={book} relationship={relationship} onUpdate={onUpdateRelationship} />;
   }
 
   const offenseIndex = pageNumber - 2;
@@ -396,56 +317,6 @@ function CoverPage({ book }: { book: Book }) {
   );
 }
 
-function AboutPage({ book, relationship, onRecordContact }: { book: Book; relationship: Relationship | null; onRecordContact: () => void }) {
-  return (
-    <div className="w-full h-full p-12 overflow-y-auto">
-      <h2 className="font-handwritten text-4xl font-bold text-[#1a1a1a] mb-6 underline">
-        About {book.personName}
-      </h2>
-
-      <div className="space-y-6 font-handwritten text-lg text-[#1a1a1a]">
-        <div>
-          <p className="font-bold mb-2">Status:</p>
-          <p className="ml-4">
-            {relationship ? `${relationship.relationship} — Strength Score: ${relationship.strengthScore}` : 'Keeping tabs on them...'}
-          </p>
-        </div>
-
-        {relationship?.lastContactDate && (
-          <div>
-            <p className="font-bold mb-2">Last Contact:</p>
-            <p className="ml-4">
-              {new Date(relationship.lastContactDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-            </p>
-          </div>
-        )}
-
-        {relationship?.notes && (
-          <div>
-            <p className="font-bold mb-2">Notes:</p>
-            <p className="ml-4 italic">{relationship.notes}</p>
-          </div>
-        )}
-
-        {relationship && (
-          <button
-            onClick={onRecordContact}
-            className="flex items-center gap-2 px-4 py-2 bg-[#98FF98]/40 hover:bg-[#98FF98]/60 border-2 border-[#2d8a2d]/30 rounded-lg transition-colors"
-          >
-            <Phone size={18} className="text-[#2d8a2d]" />
-            <span className="font-bold text-[#2d8a2d]">Record Contact</span>
-          </button>
-        )}
-
-        <div className="pt-6 border-t-2 border-dashed border-[#1a1a1a]/20">
-          <p className="text-sm italic text-[#1a1a1a]/60">
-            This book documents everything they've done. Every. Single. Thing.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function OffensePage({ offense }: { offense: Offense }) {
   return (

@@ -1,4 +1,5 @@
 export type RelationshipType = 'friend' | 'family' | 'colleague' | 'partner' | 'other';
+export type FamilySubType = 'mother' | 'father' | 'sibling' | 'grandparent' | 'child' | 'other_family';
 export type ContactFrequency = 'daily' | 'weekly' | 'monthly' | 'quarterly';
 export type ImportantDateType = 'birthday' | 'anniversary' | 'custom';
 export type SharingPermission = 'view' | 'edit' | 'contribute';
@@ -72,7 +73,15 @@ export interface Relationship {
 
   notes: string;
   archived: boolean;
-  localModified: boolean; // For sync tracking
+  localModified: boolean;
+
+  // Inside cover bio (all optional for backwards compatibility)
+  profileImageData?: string | null;
+  birthday?: string | null;       // ISO date string e.g. "1995-06-14"
+  nickname?: string | null;
+  favoriteThings?: { label: string; value: string }[];
+  howWeMet?: string | null;
+  familySubType?: FamilySubType | null;
 }
 
 export interface CreateRelationshipData {

@@ -1,7 +1,11 @@
 export const APP_CONFIG = {
   // Database
   DB_NAME: 'BurnBookDB',
-  DB_VERSION: 2,
+  DB_VERSION: 3,
+
+  // Media
+  MAX_IMAGE_SIZE_BYTES: 5 * 1024 * 1024, // 5MB pre-compression guard
+  MAX_ITEMS_PER_PAGE: 50,
 
   // Sync
   DEFAULT_SYNC_INTERVAL: 15, // minutes

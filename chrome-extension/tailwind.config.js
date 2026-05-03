@@ -37,7 +37,7 @@ module.exports = {
       },
       fontFamily: {
         handwritten: ['Caveat', 'cursive'],
-        serif: ['Playfair Display', 'Georgia', 'serif']
+        serif: ['Arial', 'sans-serif']
       },
       boxShadow: {
         notebook: '0 2px 8px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(212,165,116,0.15)',
