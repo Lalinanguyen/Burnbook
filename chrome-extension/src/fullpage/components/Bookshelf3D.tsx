@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { localStorage as db } from '../../shared/storage/LocalDB';
 import { Book, Offense } from '../../shared/types';
@@ -15,9 +15,10 @@ interface Bookshelf3DProps {
 const SHELF_Y = [0, 10, 20, 30];
 const BOOKS_PER_SHELF = 6;
 const SHELF_THICKNESS = 1;
-const DRAG_THRESHOLD = 12;   // px before it counts as a drag
-const MAX_DRAG_PX = 280;     // px for full-power throw
-const MAX_THROW_SPEED = 26;  // scene units/s
+const DRAG_THRESHOLD = 12;
+const MAX_DRAG_PX = 220;
+const MAX_THROW_SPEED = 60;
+const SHAKE_DURATION = 0.35;
 
 function hashId(id: string, salt: string): number {
   const s = id + salt;
@@ -68,6 +69,33 @@ interface DragState {
   currentY: number;
 }
 
+interface ShakeRefState {
+  strength: number;
+  startTime: number;
+}
+
+// Runs inside Canvas: modulates camera.position each frame.
+// IMPORTANT: priority must be 0 (default) — non-zero priority disables R3F auto-render.
+// Rendered after OrbitControls in JSX order, so its useFrame runs after OrbitControls' .update.
+function CameraShake({ shakeRef }: { shakeRef: React.MutableRefObject<ShakeRefState> }) {
+  const { camera } = useThree();
+  useFrame(() => {
+    const s = shakeRef.current;
+    if (s.strength <= 0) return;
+    const elapsed = (performance.now() - s.startTime) / 1000;
+    if (elapsed >= SHAKE_DURATION) {
+      shakeRef.current = { strength: 0, startTime: 0 };
+      return;
+    }
+    const decay = 1 - elapsed / SHAKE_DURATION;
+    const amp = s.strength * decay;
+    const t = elapsed * 60;
+    camera.position.x += Math.sin(t * 1.3) * amp;
+    camera.position.y += Math.cos(t * 1.7) * amp * 0.6;
+  });
+  return null;
+}
+
 export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DProps) {
   const [books, setBooks] = useState<Book[]>([]);
   const [offenses, setOffenses] = useState<Offense[]>([]);
@@ -78,9 +106,9 @@ export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DP
 
   const menuRef = useRef<HTMLDivElement>(null);
   const orbitRef = useRef<any>(null);
-  // Tracks whether the current mousedown became a real drag (suppresses the click event)
   const dragThresholdReachedRef = useRef(false);
-  const dragStateRef = useRef<DragState | null>(null); // sync ref for event handlers
+  const dragStateRef = useRef<DragState | null>(null);
+  const shakeRef = useRef<ShakeRefState>({ strength: 0, startTime: 0 });
 
   useEffect(() => {
     loadData();
@@ -105,7 +133,7 @@ export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DP
     };
   }, [contextMenu]);
 
-  // Drag tracking — mousemove and mouseup on window
+  // Drag tracking
   useEffect(() => {
     if (!dragState) return;
 
@@ -128,7 +156,6 @@ export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DP
       if (!ds) return;
 
       if (dragThresholdReachedRef.current) {
-        // Compute throw velocity from drag vector
         const dx = ds.currentX - ds.startX;
         const dy = ds.currentY - ds.startY;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -136,18 +163,21 @@ export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DP
         const speed = power * MAX_THROW_SPEED;
 
         const vx = (dx / Math.max(dist, 1)) * speed;
-        const vy = (-dy / Math.max(dist, 1)) * speed; // screen Y is inverted
-        const vz = 5 + power * 12;
+        const vy = (-dy / Math.max(dist, 1)) * speed;
+        const vz = 10 + power * 30;
 
-        triggerAnim(ds.bookId, 'throwing', { vx, vy, vz });
+        const mode: BookAnimMode = e.shiftKey ? 'throw-burn' : 'throwing';
+        triggerAnim(ds.bookId, mode, { vx, vy, vz });
+
+        // Camera shake — stronger for throw-burn
+        const shakeStrength = (mode === 'throw-burn' ? 0.55 : 0.35) * (0.4 + power * 0.6);
+        shakeRef.current = { strength: shakeStrength, startTime: performance.now() };
       }
 
-      // Restore OrbitControls and reset drag
       if (orbitRef.current) orbitRef.current.enabled = true;
       dragStateRef.current = null;
       setDragState(null);
 
-      // Reset threshold flag after a tick so the click event can check it
       setTimeout(() => { dragThresholdReachedRef.current = false; }, 0);
     };
 
@@ -189,11 +219,18 @@ export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DP
   const handleThrow = useCallback((bookId: string) => {
     setContextMenu(null);
     triggerAnim(bookId, 'throwing');
+    shakeRef.current = { strength: 0.3, startTime: performance.now() };
   }, [triggerAnim]);
 
   const handleBurn = useCallback((bookId: string) => {
     setContextMenu(null);
     triggerAnim(bookId, 'burning');
+  }, [triggerAnim]);
+
+  const handleThrowBurn = useCallback((bookId: string) => {
+    setContextMenu(null);
+    triggerAnim(bookId, 'throw-burn');
+    shakeRef.current = { strength: 0.5, startTime: performance.now() };
   }, [triggerAnim]);
 
   const handleAnimationEnd = useCallback((bookId: string) => {
@@ -237,19 +274,6 @@ export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DP
     [bookAnimStates]
   );
 
-  // Compute drag indicator values
-  const dragIndicator = useMemo(() => {
-    if (!dragState) return null;
-    const dx = dragState.currentX - dragState.startX;
-    const dy = dragState.currentY - dragState.startY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const power = Math.min(dist / MAX_DRAG_PX, 1);
-    const r = Math.round(power * 220);
-    const g = Math.round((1 - power) * 200);
-    const color = `rgb(${r}, ${g}, 40)`;
-    return { x1: dragState.startX, y1: dragState.startY, x2: dragState.currentX, y2: dragState.currentY, color, power };
-  }, [dragState]);
-
   if (loading) {
     return (
       <div className="fixed inset-0 bg-gradient-to-b from-burn-cream to-burn-pink-light flex items-center justify-center">
@@ -274,7 +298,6 @@ export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DP
 
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-burn-cream to-burn-pink-light">
-      {/* Suppress browser context menu on canvas */}
       <div className="absolute inset-0" onContextMenu={(e) => e.preventDefault()}>
         <Canvas shadows>
           <PerspectiveCamera makeDefault position={[0, 15, 25]} fov={50} />
@@ -283,7 +306,6 @@ export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DP
           <directionalLight position={[10, 20, 10]} intensity={0.8} castShadow />
           <directionalLight position={[-8, 10, 5]} intensity={0.3} />
 
-          {/* Room environment */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
             <planeGeometry args={[120, 80]} />
             <meshStandardMaterial color="#5C3A1E" roughness={0.95} />
@@ -320,57 +342,11 @@ export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DP
             autoRotate={!anyAnimating && !dragState}
             autoRotateSpeed={0.2}
           />
+
+          <CameraShake shakeRef={shakeRef} />
         </Canvas>
       </div>
 
-      {/* Drag-to-throw indicator */}
-      {dragIndicator && (
-        <svg
-          style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 100 }}
-        >
-          <defs>
-            <marker id="throw-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-              <polygon points="0 0, 10 3.5, 0 7" fill={dragIndicator.color} />
-            </marker>
-          </defs>
-          {/* Glow line */}
-          <line
-            x1={dragIndicator.x1} y1={dragIndicator.y1}
-            x2={dragIndicator.x2} y2={dragIndicator.y2}
-            stroke={dragIndicator.color}
-            strokeWidth={8}
-            strokeOpacity={0.2}
-            strokeLinecap="round"
-          />
-          {/* Main arrow */}
-          <line
-            x1={dragIndicator.x1} y1={dragIndicator.y1}
-            x2={dragIndicator.x2} y2={dragIndicator.y2}
-            stroke={dragIndicator.color}
-            strokeWidth={2.5}
-            strokeDasharray="10 5"
-            markerEnd="url(#throw-arrow)"
-            strokeLinecap="round"
-          />
-          {/* Origin dot */}
-          <circle cx={dragIndicator.x1} cy={dragIndicator.y1} r={6} fill={dragIndicator.color} opacity={0.8} />
-          {/* Power label */}
-          {dragIndicator.power > 0.05 && (
-            <text
-              x={dragIndicator.x2 + 14}
-              y={dragIndicator.y2 + 4}
-              fill={dragIndicator.color}
-              fontSize={12}
-              fontFamily="Georgia, serif"
-              fontWeight="bold"
-            >
-              {Math.round(dragIndicator.power * 100)}%
-            </text>
-          )}
-        </svg>
-      )}
-
-      {/* Context menu rendered outside Canvas so it always sits on top */}
       {contextMenu && (
         <div ref={menuRef}>
           <BookContextMenu
@@ -378,11 +354,11 @@ export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DP
             y={contextMenu.y}
             onThrow={() => handleThrow(contextMenu.bookId)}
             onBurn={() => handleBurn(contextMenu.bookId)}
+            onThrowBurn={() => handleThrowBurn(contextMenu.bookId)}
           />
         </div>
       )}
 
-      {/* Quick stats overlay */}
       <div className="absolute bottom-4 left-4 glass-pink px-4 py-3 rounded-xl text-xs font-serif pointer-events-none">
         <div className="font-handwritten text-sm text-burn-pink-darker mb-1">{books.length} book{books.length !== 1 ? 's' : ''}</div>
         {stats.totalOffenses > 0 && (
@@ -396,9 +372,8 @@ export default function Bookshelf3D({ onSelectBook, onCreateBook }: Bookshelf3DP
         )}
       </div>
 
-      {/* Hint */}
       <div className="absolute bottom-4 right-4 glass-pink px-3 py-2 rounded-xl text-xs font-serif pointer-events-none opacity-60">
-        Click &amp; drag to throw · Right-click to burn
+        Click &amp; drag to throw · Shift+drag to throw + burn · Right-click for menu
       </div>
     </div>
   );

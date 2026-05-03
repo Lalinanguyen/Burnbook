@@ -5,9 +5,10 @@ interface BookContextMenuProps {
   y: number;
   onThrow: () => void;
   onBurn: () => void;
+  onThrowBurn: () => void;
 }
 
-export default function BookContextMenu({ x, y, onThrow, onBurn }: BookContextMenuProps) {
+export default function BookContextMenu({ x, y, onThrow, onBurn, onThrowBurn }: BookContextMenuProps) {
   return (
     <div
       style={{ position: 'fixed', left: x, top: y, zIndex: 9999 }}
@@ -25,6 +26,12 @@ export default function BookContextMenu({ x, y, onThrow, onBurn }: BookContextMe
         onClick={onBurn}
       >
         Burn 🔥
+      </button>
+      <button
+        className="px-4 py-2 text-sm font-handwritten text-left hover:bg-burn-pink-light transition-colors border-t border-burn-pink-light"
+        onClick={onThrowBurn}
+      >
+        Throw &amp; Burn 🔥🤬
       </button>
     </div>
   );
