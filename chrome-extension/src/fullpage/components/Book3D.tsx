@@ -314,13 +314,16 @@ export default function Book3D({
         />
       </points>
 
-      <group ref={groupRef} position={position} rotation={[0, rotation, 0]}>
+      <group ref={groupRef} position={position} rotation={[0, rotation, 0]} userData={{ bookId: book.id }}>
         <mesh
           ref={meshRef}
           castShadow
           receiveShadow
           onClick={(e) => {
             if (isAnimating) return;
+            // R3F's onClick fires on any pointer-up; restrict to left-button so right-click
+            // (which we use for burn) doesn't also open the book.
+            if (e.nativeEvent.button !== 0) return;
             e.stopPropagation();
             onClick();
           }}
@@ -336,6 +339,8 @@ export default function Book3D({
           }}
           onPointerDown={(e) => {
             if (isAnimating || !onDragStart) return;
+            // Only start hold-charge on left-button; right-click goes to onContextMenu (burn).
+            if (e.nativeEvent.button !== 0) return;
             e.stopPropagation();
             onDragStart(book.id, e.nativeEvent.clientX, e.nativeEvent.clientY);
           }}

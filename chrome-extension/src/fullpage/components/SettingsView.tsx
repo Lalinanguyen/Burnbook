@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
-import { KeyRound, Check, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { KeyRound, Check, X, Home } from 'lucide-react';
 import { localStorage as db } from '../../shared/storage/LocalDB';
 import { passwordManager, secureStorage } from '../../shared/utils/encryption';
+import type { RoomTheme } from './Room';
+
+const ROOM_OPTIONS: { value: RoomTheme; label: string; note?: string }[] = [
+  { value: 'girls', label: '💖 Girls Room' },
+  { value: 'boys', label: '💪 Boys Room', note: 'coming soon — falls back to bare for now' },
+  { value: 'bare', label: '⚪ Just Walls' },
+];
 
 export default function SettingsView() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -10,6 +17,28 @@ export default function SettingsView() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [roomTheme, setRoomTheme] = useState<RoomTheme>('girls');
+  const [roomSaved, setRoomSaved] = useState(false);
+
+  useEffect(() => {
+    db.getUserSettings().then(s => {
+      if (s?.roomTheme) setRoomTheme(s.roomTheme);
+    }).catch(() => {});
+  }, []);
+
+  const handleRoomChange = async (theme: RoomTheme) => {
+    setRoomTheme(theme);
+    setRoomSaved(false);
+    try {
+      const settings = await db.getUserSettings();
+      if (!settings) return;
+      await db.updateUserSettings(settings.userId ?? '', { roomTheme: theme });
+      setRoomSaved(true);
+      setTimeout(() => setRoomSaved(false), 2000);
+    } catch (err) {
+      console.error('Error saving room theme:', err);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,6 +179,49 @@ export default function SettingsView() {
               {loading ? 'Updating...' : 'Update Password'}
             </button>
           </form>
+        </div>
+
+        <div className="card mt-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-lg bg-burn-pink-light">
+              <Home size={20} className="text-burn-pink-darker" />
+            </div>
+            <h2 className="font-handwritten text-xl text-burn-pink-darker">Room Theme</h2>
+          </div>
+
+          <p className="text-xs font-serif text-burn-gray mb-4">
+            Pick the room around your bookshelf. Reopen the bookshelf to see changes.
+          </p>
+
+          <div className="space-y-2">
+            {ROOM_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handleRoomChange(opt.value)}
+                className={`w-full text-left px-4 py-3 rounded-lg border transition-all font-handwritten text-base ${
+                  roomTheme === opt.value
+                    ? 'bg-burn-pink-light border-burn-pink-dark text-burn-pink-darker'
+                    : 'bg-white border-burn-pink-light text-burn-gray hover:bg-burn-cream'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>{opt.label}</span>
+                  {roomTheme === opt.value && <Check size={16} />}
+                </div>
+                {opt.note && (
+                  <div className="text-[11px] font-serif text-burn-gray mt-1 italic">{opt.note}</div>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {roomSaved && (
+            <div className="flex items-center gap-2 text-green-700 text-xs font-serif mt-3">
+              <Check size={14} />
+              Saved.
+            </div>
+          )}
         </div>
       </div>
     </div>
