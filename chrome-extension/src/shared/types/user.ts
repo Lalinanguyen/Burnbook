@@ -18,6 +18,7 @@ export interface UserSettings {
   // UI preferences
   theme: 'light' | 'dark' | 'auto';
   defaultView: 'offenses' | 'relationships' | 'dashboard';
+  roomTheme?: 'girls' | 'boys' | 'bare';
 
   // Customizable categories
   offenseCategories: string[];
@@ -41,6 +42,7 @@ export interface UpdateUserSettingsData {
   importantDateNotifications?: boolean;
   theme?: 'light' | 'dark' | 'auto';
   defaultView?: 'offenses' | 'relationships' | 'dashboard';
+  roomTheme?: 'girls' | 'boys' | 'bare';
   offenseCategories?: string[];
   relationshipTypes?: string[];
 }
