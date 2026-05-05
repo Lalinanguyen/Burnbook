@@ -1,9 +1,17 @@
 import { db } from '../shared/storage/LocalDB';
-import { Relationship } from '../shared/types';
+import { Relationship, UserSettings } from '../shared/types';
+import { dateHelpers } from '../shared/utils';
+import {
+  selectDueReminders,
+  pruneFiredReminders,
+  dedupeKey,
+} from './reminders';
 
 console.log('Burn Book background service worker started');
 
 const DAILY_CHECK_ALARM = 'check-important-dates';
+const FIRED_REMINDERS_KEY = 'firedReminders';
+const SENT_DATES_KEY = 'sentNotifications';
 
 // ─── Install / startup ────────────────────────────────────────────────────────
 
@@ -17,7 +25,6 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 function scheduleDailyCheck() {
-  // Fire once per day; start at next midnight
   const now = new Date();
   const midnight = new Date(now);
   midnight.setDate(midnight.getDate() + 1);
@@ -37,11 +44,74 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     // future sync logic
   } else if (alarm.name === DAILY_CHECK_ALARM) {
     await checkImportantDates();
-  } else if (alarm.name.startsWith('reminder_')) {
-    const relationshipId = alarm.name.replace('reminder_', '');
-    await fireRelationshipReminder(relationshipId);
+    await checkRelationshipReminders();
   }
 });
+
+// ─── Settings helpers ─────────────────────────────────────────────────────────
+
+async function loadSettings(): Promise<UserSettings | null> {
+  try {
+    const all = await db.settings.toArray();
+    return all[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Relationship reminder sweep ──────────────────────────────────────────────
+
+async function checkRelationshipReminders() {
+  let relationships: Relationship[];
+  try {
+    relationships = await db.relationships.toArray();
+  } catch {
+    return;
+  }
+
+  const settings = await loadSettings();
+  const now = new Date();
+
+  const stored = await chrome.storage.local.get(FIRED_REMINDERS_KEY);
+  let fired: Record<string, string> = stored[FIRED_REMINDERS_KEY] || {};
+  fired = pruneFiredReminders(fired, now);
+
+  const due = selectDueReminders(relationships, settings, now, fired);
+
+  for (const rel of due) {
+    fireRelationshipReminder(rel);
+
+    const key = dedupeKey(rel);
+    if (key) fired[key] = now.toISOString();
+
+    const next = dateHelpers.addDays(now, rel.reminderFrequency || 7);
+    try {
+      await db.relationships.update(rel.id, {
+        nextReminderDate: next,
+        localModified: true,
+        updatedAt: new Date(),
+      });
+    } catch {
+      // ignore — best effort
+    }
+  }
+
+  await chrome.storage.local.set({ [FIRED_REMINDERS_KEY]: fired });
+}
+
+function fireRelationshipReminder(rel: Relationship) {
+  try {
+    chrome.notifications.create(`reminder_${rel.id}_${Date.now()}`, {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('icons/icon48.png'),
+      title: `👋 Check in with ${rel.personName}`,
+      message: `It's been a while. How are things with ${rel.personName}?`,
+      priority: 1,
+    });
+  } catch {
+    // notifications may be unavailable in some contexts
+  }
+}
 
 // ─── Important date checker ───────────────────────────────────────────────────
 
@@ -54,28 +124,12 @@ async function checkImportantDates() {
   }
 
   const today = new Date();
-  const sentKey = 'sentNotifications';
-  const stored = await chrome.storage.local.get(sentKey);
-  const sent: Record<string, string> = stored[sentKey] || {};
+  const stored = await chrome.storage.local.get(SENT_DATES_KEY);
+  const sent: Record<string, string> = stored[SENT_DATES_KEY] || {};
 
   for (const rel of relationships) {
     if (rel.archived) continue;
     const dates = rel.importantDates || [];
-
-    // Birthday check
-    if ((rel as any).birthday) {
-      const bday = new Date((rel as any).birthday as string);
-      const mmdd = `${String(bday.getMonth() + 1).padStart(2, '0')}-${String(bday.getDate()).padStart(2, '0')}`;
-      await maybeFire(
-        `bday_${rel.id}`,
-        `🎂 ${rel.personName}'s Birthday`,
-        `${rel.personName}'s birthday is coming up!`,
-        mmdd,
-        7,
-        today,
-        sent
-      );
-    }
 
     for (const d of dates) {
       await maybeFire(
@@ -90,14 +144,14 @@ async function checkImportantDates() {
     }
   }
 
-  await chrome.storage.local.set({ [sentKey]: sent });
+  await chrome.storage.local.set({ [SENT_DATES_KEY]: sent });
 }
 
 async function maybeFire(
   key: string,
   title: string,
   message: string,
-  mmdd: string,         // "MM-DD"
+  mmdd: string,
   reminderDays: number,
   today: Date,
   sent: Record<string, string>
@@ -111,7 +165,6 @@ async function maybeFire(
 
   if (daysUntil !== reminderDays) return;
 
-  // Don't fire the same notification twice in the same year
   const yearKey = `${key}_${today.getFullYear()}`;
   if (sent[yearKey]) return;
 
@@ -125,23 +178,7 @@ async function maybeFire(
     });
     sent[yearKey] = new Date().toISOString();
   } catch {
-    // notifications may be unavailable in some contexts
-  }
-}
-
-async function fireRelationshipReminder(relationshipId: string) {
-  try {
-    const rel = await db.relationships.get(relationshipId);
-    if (!rel || rel.archived) return;
-    chrome.notifications.create(`reminder_${relationshipId}_${Date.now()}`, {
-      type: 'basic',
-      iconUrl: chrome.runtime.getURL('icons/icon48.png'),
-      title: `👋 Check in with ${rel.personName}`,
-      message: `It's been a while. How are things with ${rel.personName}?`,
-      priority: 1,
-    });
-  } catch {
-    // db may not be available yet
+    // ignore
   }
 }
 
@@ -152,12 +189,36 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     case 'SYNC_NOW':
       sendResponse({ success: true });
       break;
-    case 'SCHEDULE_REMINDER':
-      sendResponse({ success: true });
-      break;
+    case 'SCHEDULE_REMINDER': {
+      const id: string | undefined = message.relationshipId;
+      if (!id) {
+        sendResponse({ success: false, error: 'Missing relationshipId' });
+        break;
+      }
+      (async () => {
+        try {
+          const rel = await db.relationships.get(id);
+          if (!rel) {
+            sendResponse({ success: false, error: 'Not found' });
+            return;
+          }
+          const base = rel.lastContactDate ? new Date(rel.lastContactDate) : new Date();
+          const next = dateHelpers.addDays(base, rel.reminderFrequency || 7);
+          await db.relationships.update(id, {
+            nextReminderDate: next,
+            localModified: true,
+            updatedAt: new Date(),
+          });
+          sendResponse({ success: true, nextReminderDate: next.toISOString() });
+        } catch (err) {
+          sendResponse({ success: false, error: String(err) });
+        }
+      })();
+      return true;
+    }
     case 'UNLOCK':
-      // Run date check immediately after unlock so user sees alerts right away
       checkImportantDates();
+      checkRelationshipReminders();
       sendResponse({ success: true });
       break;
     case 'LOCK':
@@ -166,6 +227,23 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     case 'CHECK_DATES_NOW':
       checkImportantDates().then(() => sendResponse({ success: true }));
       return true;
+    case 'CHECK_REMINDERS_NOW':
+      checkRelationshipReminders().then(() => sendResponse({ success: true }));
+      return true;
+    case 'TEST_NOTIFICATION':
+      try {
+        chrome.notifications.create(`test_${Date.now()}`, {
+          type: 'basic',
+          iconUrl: chrome.runtime.getURL('icons/icon48.png'),
+          title: '🔔 Burn Book test',
+          message: 'Notifications are working.',
+          priority: 1,
+        });
+        sendResponse({ success: true });
+      } catch (err) {
+        sendResponse({ success: false, error: String(err) });
+      }
+      break;
     default:
       sendResponse({ success: false, error: 'Unknown message type' });
   }

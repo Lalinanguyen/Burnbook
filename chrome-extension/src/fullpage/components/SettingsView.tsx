@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { KeyRound, Check, X, Home } from 'lucide-react';
+import { KeyRound, Check, X, Home, Bell } from 'lucide-react';
 import { localStorage as db } from '../../shared/storage/LocalDB';
 import { passwordManager, secureStorage } from '../../shared/utils/encryption';
 import type { RoomTheme } from './Room';
@@ -19,12 +19,48 @@ export default function SettingsView() {
   const [loading, setLoading] = useState(false);
   const [roomTheme, setRoomTheme] = useState<RoomTheme>('girls');
   const [roomSaved, setRoomSaved] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [reminderNotifications, setReminderNotifications] = useState(true);
+  const [testStatus, setTestStatus] = useState<'idle' | 'sent' | 'error'>('idle');
 
   useEffect(() => {
     db.getUserSettings().then(s => {
       if (s?.roomTheme) setRoomTheme(s.roomTheme);
+      if (typeof s?.notificationsEnabled === 'boolean') setNotificationsEnabled(s.notificationsEnabled);
+      if (typeof s?.reminderNotifications === 'boolean') setReminderNotifications(s.reminderNotifications);
     }).catch(() => {});
   }, []);
+
+  const persistNotifPref = async (patch: { notificationsEnabled?: boolean; reminderNotifications?: boolean }) => {
+    try {
+      const settings = await db.getUserSettings();
+      if (!settings) return;
+      await db.updateUserSettings(settings.userId ?? '', patch);
+    } catch (err) {
+      console.error('Error saving notification settings:', err);
+    }
+  };
+
+  const handleMasterToggle = (next: boolean) => {
+    setNotificationsEnabled(next);
+    persistNotifPref({ notificationsEnabled: next });
+  };
+
+  const handleReminderToggle = (next: boolean) => {
+    setReminderNotifications(next);
+    persistNotifPref({ reminderNotifications: next });
+  };
+
+  const sendTestNotification = async () => {
+    setTestStatus('idle');
+    try {
+      const res = await chrome.runtime.sendMessage({ type: 'TEST_NOTIFICATION' });
+      setTestStatus(res?.success ? 'sent' : 'error');
+    } catch {
+      setTestStatus('error');
+    }
+    setTimeout(() => setTestStatus('idle'), 2500);
+  };
 
   const handleRoomChange = async (theme: RoomTheme) => {
     setRoomTheme(theme);
@@ -220,6 +256,62 @@ export default function SettingsView() {
             <div className="flex items-center gap-2 text-green-700 text-xs font-serif mt-3">
               <Check size={14} />
               Saved.
+            </div>
+          )}
+        </div>
+
+        <div className="card mt-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-lg bg-burn-pink-light">
+              <Bell size={20} className="text-burn-pink-darker" />
+            </div>
+            <h2 className="font-handwritten text-xl text-burn-pink-darker">Reminders</h2>
+          </div>
+
+          <p className="text-xs font-serif text-burn-gray mb-4">
+            Get a daily nudge when it's been a while since you've checked in with someone.
+          </p>
+
+          <label className="flex items-center justify-between py-2 cursor-pointer">
+            <span className="font-serif text-sm text-burn-black">Notifications</span>
+            <input
+              type="checkbox"
+              checked={notificationsEnabled}
+              onChange={(e) => handleMasterToggle(e.target.checked)}
+              className="h-4 w-4 accent-burn-pink-darker"
+            />
+          </label>
+
+          <label className={`flex items-center justify-between py-2 cursor-pointer ${!notificationsEnabled ? 'opacity-50' : ''}`}>
+            <span className="font-serif text-sm text-burn-black">Relationship check-ins</span>
+            <input
+              type="checkbox"
+              checked={reminderNotifications}
+              disabled={!notificationsEnabled}
+              onChange={(e) => handleReminderToggle(e.target.checked)}
+              className="h-4 w-4 accent-burn-pink-darker"
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={sendTestNotification}
+            disabled={!notificationsEnabled}
+            className="btn-secondary w-full mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Send test notification
+          </button>
+
+          {testStatus === 'sent' && (
+            <div className="flex items-center gap-2 text-green-700 text-xs font-serif mt-3">
+              <Check size={14} />
+              Notification sent.
+            </div>
+          )}
+          {testStatus === 'error' && (
+            <div className="flex items-center gap-2 text-red-600 text-xs font-serif mt-3">
+              <X size={14} />
+              Couldn't send. Check OS notification permissions.
             </div>
           )}
         </div>
