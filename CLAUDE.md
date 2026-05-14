@@ -50,6 +50,19 @@ No test runner is configured yet.
 - Dexie (IndexedDB), crypto-js (AES/PBKDF2), zod (validation), lucide-react (icons)
 - Webpack 5 with ts-loader, postcss-loader
 
+## Constraints
+
+- Do not modify `encryption.ts` without explicit instruction — crypto bugs are silent and hard to detect.
+- MV3 service workers have no persistent state between events — flag any pattern that assumes persistence.
+- `chrome.storage.local` is the source of truth; don't suggest `localStorage` as an alternative.
+- Background sync and calendar view are intentionally stubbed — don't implement without asking.
+
+## Definition of Done
+
+Before declaring any task complete:
+1. `npm run type-check` passes (run from `chrome-extension/`)
+2. `npm run build` succeeds and outputs to `dist/`
+
 ## Coding Style
 
 Use comments sparingly. Only comment complex code.
